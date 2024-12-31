@@ -36,19 +36,19 @@ deploy {
                     // Add GC changes that should improve performance, used in Mechanical Advantage AdvantageKit examples.
                     final maxJavaHeapSizeMb = 100;
                     jvmArgs.addAll([
-                            "-XX:+UnlockExperimentalVMOptions",
-                            "-XX:GCTimeRatio=5",
-                            "-XX:+UseSerialGC",
-                            "-XX:MaxGCPauseMillis=50",
-                            "-Xmx" + maxJavaHeapSizeMb + "M",
-                            "-Xms" + maxJavaHeapSizeMb + "M",
-                            "-XX:+AlwaysPreTouch"
+                        "-XX:+UnlockExperimentalVMOptions",
+                        "-XX:GCTimeRatio=5",
+                        "-XX:+UseSerialGC",
+                        "-XX:MaxGCPauseMillis=50",
+                        "-Xmx" + maxJavaHeapSizeMb + "M",
+                        "-Xms" + maxJavaHeapSizeMb + "M",
+                        "-XX:+AlwaysPreTouch"
                     ]);
 
                     // Run "./gradlew deploy -PprofilingMode" to run with profiling mode enabled.
                     // Check to see if profiling mode is enabled for remote performance profiling.
                     project.logger.lifecycle("Checking if performance profiling is enabled...")
-                    if (frc.project.hasProperty("enableProfiling")) {
+                    if (frc.project.hasProperty("profilingMode")) {
                         project.logger.lifecycle("Performance profiling mode is enabled!")
                         project.logger.lifecycle("Connect JMX client to roborio-" + team + "-frc.local:1198 or " + "10." + (team / 100) + ".2" + ":1198 for roboRIO performance profiling.")
                         jvmArgs.addAll([
@@ -76,13 +76,13 @@ deploy {
 }
 
 // This is run when the robot code is being simulated.
-simulateJava {
+simulateJavaRelease {
     // Run "./gradlew simulateJava -PreplayMode" to run with replay mode enabled.
     // Check to see if replay mode is enabled.
     project.logger.lifecycle("Checking if AdvantageKit replay mode is enabled...")
     if (frc.project.hasProperty("replayMode")) {
         project.logger.lifecycle("Replay mode is enabled!")
-        args "--replay"
+        args '--replay'
     }
 }
 
@@ -108,8 +108,8 @@ dependencies {
     nativeRelease wpi.java.vendor.jniRelease(wpi.platforms.desktop)
     simulationRelease wpi.sim.enableRelease()
 
-    implementation 'com.google.errorprone:error_prone_annotations:2.36'
-    errorprone('com.google.errorprone:error_prone_core:2.36')
+    implementation 'com.google.errorprone:error_prone_annotations:2.36.0'
+    errorprone('com.google.errorprone:error_prone_core:2.36.0')
 
     testImplementation "org.junit.jupiter:junit-jupiter:5.11.4"
     testRuntimeOnly "org.junit.platform:junit-platform-launcher:1.11.4"
