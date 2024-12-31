@@ -1,0 +1,6 @@
+<component name="CopyrightManager">
+  <copyright>
+    <option name="notice" value="Copyright (c) &amp;#36;originalComment.match(&quot;Copyright \(c\) (\d+)&quot;, 1, &quot;-&quot;, &quot;&amp;#36;today.year&quot;)&amp;#36;today.year Team Paradise - FRC 1165 (https://github.com/TeamParadise)&#10;&#10;Use of this source code is governed by the MIT License, which can be found in the LICENSE file at&#10;the root directory of this project." />
+    <option name="myName" value="Default Copyright" />
+  </copyright>
+</component>
