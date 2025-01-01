@@ -51,6 +51,12 @@ public class DriveIO {
     }
   }
 
+
+  /**
+   * Updates a {@link DriveIOInputs} instance with the latest updates from this {@link DriveIO}.
+   *
+   * @param inputs A {@link DriveIOInputs} instance to update.
+   */
   void updateInputs(DriveIOInputs inputs) {}
 
   void logModules(SwerveDrivetrain.SwerveDriveState driveState) {}
