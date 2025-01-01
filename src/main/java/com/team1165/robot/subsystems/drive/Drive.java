@@ -9,13 +9,13 @@ package com.team1165.robot.subsystems.drive;
 
 import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.team1165.robot.subsystems.drive.io.DriveIO;
-import com.team1165.robot.subsystems.drive.io.DriveIOInputsAutoLogged;
+import com.team1165.robot.subsystems.drive.io.DriveIO.DriveIOInputs;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import org.littletonrobotics.junction.Logger;
 
 public class Drive extends SubsystemBase {
   private final DriveIO io;
-  private final DriveIOInputsAutoLogged inputs = new DriveIOInputsAutoLogged();
+  private final DriveIOInputs inputs = new DriveIOInputs();
 
   public Drive(DriveIO io) {
     this.io = io;

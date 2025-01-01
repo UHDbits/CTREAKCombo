@@ -20,7 +20,8 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import java.util.function.Consumer;
-import org.littletonrobotics.junction.AutoLog;
+import org.littletonrobotics.junction.LogTable;
+import org.littletonrobotics.junction.inputs.LoggableInputs;
 
 /**
  * A "software" interface/implementation layer for a Swerve Drivetrain powered by the CTRE Swerve
@@ -31,10 +32,10 @@ import org.littletonrobotics.junction.AutoLog;
  */
 public interface DriveIO {
   /** Class used to store the IO values of a CTRE Swerve Drivetrain. */
-  @AutoLog
-  class DriveIOInputs extends SwerveDrivetrain.SwerveDriveState {
+  class DriveIOInputs extends SwerveDrivetrain.SwerveDriveState
+      implements LoggableInputs, Cloneable {
     /** Class used to store the IO values of a CTRE Swerve Drivetrain. */
-    DriveIOInputs() {
+    public DriveIOInputs() {
       this.Pose = new Pose2d();
     }
 
@@ -50,6 +51,49 @@ public interface DriveIO {
       this.OdometryPeriod = state.OdometryPeriod;
       this.SuccessfulDaqs = state.SuccessfulDaqs;
       this.FailedDaqs = state.FailedDaqs;
+    }
+
+    @Override
+    public void toLog(LogTable table) {
+      table.put("Pose", Pose);
+      table.put("Speeds", Speeds);
+      table.put("ModuleStates", ModuleStates);
+      table.put("ModuleTargets", ModuleTargets);
+      table.put("ModulePositions", ModulePositions);
+      table.put("RawHeading", RawHeading);
+      table.put("Timestamp", Timestamp);
+      table.put("OdometryPeriod", OdometryPeriod);
+      table.put("SuccessfulDaqs", SuccessfulDaqs);
+      table.put("FailedDaqs", FailedDaqs);
+    }
+
+    @Override
+    public void fromLog(LogTable table) {
+      Pose = table.get("Pose", Pose);
+      Speeds = table.get("Speeds", Speeds);
+      ModuleStates = table.get("ModuleStates", ModuleStates);
+      ModuleTargets = table.get("ModuleTargets", ModuleTargets);
+      ModulePositions = table.get("ModulePositions", ModulePositions);
+      RawHeading = table.get("RawHeading", RawHeading);
+      Timestamp = table.get("Timestamp", Timestamp);
+      OdometryPeriod = table.get("OdometryPeriod", OdometryPeriod);
+      SuccessfulDaqs = table.get("SuccessfulDaqs", SuccessfulDaqs);
+      FailedDaqs = table.get("FailedDaqs", FailedDaqs);
+    }
+
+    public DriveIOInputs clone() {
+      DriveIOInputs clone = new DriveIOInputs();
+      clone.Pose = Pose;
+      clone.Speeds = Speeds;
+      clone.ModuleStates = ModuleStates;
+      clone.ModuleTargets = ModuleTargets;
+      clone.ModulePositions = ModulePositions;
+      clone.RawHeading = RawHeading;
+      clone.Timestamp = Timestamp;
+      clone.OdometryPeriod = OdometryPeriod;
+      clone.SuccessfulDaqs = SuccessfulDaqs;
+      clone.FailedDaqs = FailedDaqs;
+      return clone;
     }
   }
 
