@@ -7,4 +7,28 @@
 
 package com.team1165.robot.subsystems.drive;
 
-public class Drive {}
+import com.ctre.phoenix6.swerve.SwerveRequest;
+import com.team1165.robot.subsystems.drive.io.DriveIO;
+import com.team1165.robot.subsystems.drive.io.DriveIOInputsAutoLogged;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import org.littletonrobotics.junction.Logger;
+
+public class Drive extends SubsystemBase {
+  private final DriveIO io;
+  private final DriveIOInputsAutoLogged inputs = new DriveIOInputsAutoLogged();
+
+  public Drive(DriveIO io) {
+    this.io = io;
+  }
+
+  @Override
+  public void periodic() {
+    io.updateInputs(inputs);
+    Logger.processInputs("Drive", inputs);
+    io.logModules();
+  }
+
+  public void setControl(SwerveRequest request) {
+    io.setControl(request);
+  }
+}

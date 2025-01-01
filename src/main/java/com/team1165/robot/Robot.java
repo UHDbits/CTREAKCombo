@@ -5,14 +5,21 @@
 
 package com.team1165.robot;
 
+import com.ctre.phoenix6.swerve.SwerveRequest;
+import com.team1165.robot.subsystems.drive.Drive;
+import com.team1165.robot.subsystems.drive.constants.TunerConstants;
+import com.team1165.robot.subsystems.drive.io.DriveIOSim;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import org.littletonrobotics.junction.LoggedRobot;
 
 public class Robot extends LoggedRobot {
   private Command autonomousCommand;
-
-  private RobotContainer robotContainer;
+  private final Drive drive =
+      new Drive(
+          new DriveIOSim(
+              TunerConstants.DrivetrainConstants,
+              TunerConstants.createDrivetrain().getModuleConstants()));
 
   @Override
   public void robotInit() {}
@@ -33,8 +40,6 @@ public class Robot extends LoggedRobot {
 
   @Override
   public void autonomousInit() {
-    autonomousCommand = robotContainer.getAutonomousCommand();
-
     if (autonomousCommand != null) {
       autonomousCommand.schedule();
     }
@@ -51,6 +56,8 @@ public class Robot extends LoggedRobot {
     if (autonomousCommand != null) {
       autonomousCommand.cancel();
     }
+
+    drive.setControl(new SwerveRequest.RobotCentric().withVelocityX(1.0));
   }
 
   @Override
