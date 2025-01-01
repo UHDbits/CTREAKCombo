@@ -39,4 +39,6 @@ public class DriveIO {
       this.FailedDaqs = state.FailedDaqs;
     }
   }
+
+  void configureAutoBuilder() {}
 }
