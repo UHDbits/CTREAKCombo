@@ -12,6 +12,8 @@ import com.team1165.robot.subsystems.drive.io.DriveIOSim;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import org.littletonrobotics.junction.LoggedRobot;
+import org.littletonrobotics.junction.Logger;
+import org.littletonrobotics.junction.networktables.NT4Publisher;
 
 public class Robot extends LoggedRobot {
   private Command autonomousCommand;
@@ -21,8 +23,10 @@ public class Robot extends LoggedRobot {
               TunerConstants.DrivetrainConstants,
               TunerConstants.createDrivetrain().getModuleConstants()));
 
-  @Override
-  public void robotInit() {}
+  public Robot() {
+    Logger.addDataReceiver(new NT4Publisher());
+    Logger.start();
+  }
 
   @Override
   public void robotPeriodic() {
