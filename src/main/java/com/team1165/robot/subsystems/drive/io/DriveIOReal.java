@@ -5,7 +5,7 @@
  * the root directory of this project.
  */
 
-package com.team1165.robot.subsystems.drive;
+package com.team1165.robot.subsystems.drive.io;
 
 import static edu.wpi.first.units.Units.Celsius;
 
