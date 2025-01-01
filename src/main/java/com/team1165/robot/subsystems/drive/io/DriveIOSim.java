@@ -14,6 +14,10 @@ import com.ctre.phoenix6.swerve.SwerveModuleConstants;
 import edu.wpi.first.wpilibj.Notifier;
 import edu.wpi.first.wpilibj.RobotController;
 
+/**
+ * {@link DriveIO} class that implements the CTRE {@link SwerveDrivetrain} class, and makes it
+ * partially AdvantageKit compatible. This class will automatically
+ */
 public class DriveIOSim extends DriveIOReal {
   private static final double simLoopPeriod = 0.005; // 5 ms
   private Notifier simNotifier = null;
@@ -22,8 +26,8 @@ public class DriveIOSim extends DriveIOReal {
   /**
    * Constructs a {@link DriveIOSim} using the specified constants.
    *
-   * <p>This constructs the underlying hardware devices, so users should not construct the devices
-   * themselves. If they need the devices, they can access them through getters in the classes.
+   * <p>This constructs the underlying simulated hardware devices, so users should not construct the
+   * devices themselves.
    *
    * @param drivetrainConstants Drivetrain-wide constants for the swerve drive
    * @param modules Constants for each specific module
@@ -37,8 +41,8 @@ public class DriveIOSim extends DriveIOReal {
   /**
    * Constructs a {@link DriveIOSim} using the specified constants.
    *
-   * <p>This constructs the underlying hardware devices, so users should not construct the devices
-   * themselves. If they need the devices, they can access them through getters in the classes.
+   * <p>This constructs the underlying simulated hardware devices, so users should not construct the
+   * devices themselves.
    *
    * @param drivetrainConstants Drivetrain-wide constants for the swerve drive
    * @param odometryUpdateFrequency The frequency to run the odometry loop. If unspecified or set to

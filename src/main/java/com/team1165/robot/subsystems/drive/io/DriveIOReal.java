@@ -19,6 +19,10 @@ import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import org.littletonrobotics.junction.Logger;
 
+/**
+ * {@link DriveIO} class that implements the CTRE {@link SwerveDrivetrain} class, and makes it
+ * partially AdvantageKit compatible.
+ */
 public class DriveIOReal extends SwerveDrivetrain implements DriveIO {
   private final String[] moduleNames = {"Drive/FL/", "Drive/FR/", "Drive/BL/", "Drive/BR/"};
 
@@ -26,7 +30,7 @@ public class DriveIOReal extends SwerveDrivetrain implements DriveIO {
    * Constructs a {@link DriveIOReal} using the specified constants.
    *
    * <p>This constructs the underlying hardware devices, so users should not construct the devices
-   * themselves. If they need the devices, they can access them through getters in the classes.
+   * themselves.
    *
    * @param drivetrainConstants Drivetrain-wide constants for the swerve drive
    * @param modules Constants for each specific module
@@ -40,7 +44,7 @@ public class DriveIOReal extends SwerveDrivetrain implements DriveIO {
    * Constructs a {@link DriveIOReal} using the specified constants.
    *
    * <p>This constructs the underlying hardware devices, so users should not construct the devices
-   * themselves. If they need the devices, they can access them through getters in the classes.
+   * themselves.
    *
    * @param drivetrainConstants Drivetrain-wide constants for the swerve drive
    * @param odometryUpdateFrequency The frequency to run the odometry loop. If unspecified or set to
@@ -58,7 +62,7 @@ public class DriveIOReal extends SwerveDrivetrain implements DriveIO {
    * Constructs a {@link DriveIOReal} using the specified constants.
    *
    * <p>This constructs the underlying hardware devices, so users should not construct the devices
-   * themselves. If they need the devices, they can access them through getters in the classes.
+   * themselves.
    *
    * @param drivetrainConstants Drivetrain-wide constants for the swerve drive
    * @param odometryUpdateFrequency The frequency to run the odometry loop. If unspecified or set to

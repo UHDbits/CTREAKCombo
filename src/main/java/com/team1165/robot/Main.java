@@ -6,6 +6,7 @@
 package com.team1165.robot;
 
 import edu.wpi.first.wpilibj.RobotBase;
+import java.util.Arrays;
 
 /**
  * Do NOT add any static variables to this class, or any initialization at all. Unless you know what
@@ -21,6 +22,9 @@ public final class Main {
    * <p>If you change your main Robot class (name), change the parameter type.
    */
   public static void main(String... args) {
+    // Enable replay mode if specified
+    Constants.replayMode = Arrays.asList(args).contains("--replay");
+    // Start the main Robot class
     RobotBase.startRobot(Robot::new);
   }
 }
