@@ -51,6 +51,10 @@ public class DriveIO {
     }
   }
 
+  void updateInputs(DriveIOInputs inputs) {}
+
+  void logModules(SwerveDrivetrain.SwerveDriveState driveState) {}
+
   void setControl(SwerveRequest request) {}
 
   void registerTelemetry(Consumer<SwerveDriveState> telemetryFunction) {}
