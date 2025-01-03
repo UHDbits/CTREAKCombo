@@ -16,7 +16,8 @@ import edu.wpi.first.wpilibj.RobotController;
 
 /**
  * {@link DriveIO} class that implements the CTRE {@link SwerveDrivetrain} class, and makes it
- * partially AdvantageKit compatible. This class will automatically
+ * partially AdvantageKit compatible. This class will automatically start a simulation thread to
+ * update the simulation state of the drivetrain.
  */
 public class DriveIOSim extends DriveIOReal {
   private static final double simLoopPeriod = 0.005; // 5 ms
