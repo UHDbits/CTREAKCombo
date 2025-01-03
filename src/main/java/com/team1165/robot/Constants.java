@@ -8,5 +8,18 @@
 package com.team1165.robot;
 
 public class Constants {
-  public static boolean replayMode = false;
+  /** The running mode of the robot (REAL, SIM, or REPLAY). By default, set to REAL. */
+  public static Mode robotMode = Mode.REAL;
+
+  /** The possible modes that a robot can run in. */
+  public enum Mode {
+    /** Running on a real robot. */
+    REAL,
+
+    /** Running a physics simulator. */
+    SIM,
+
+    /** Replaying from a log file. */
+    REPLAY
+  }
 }

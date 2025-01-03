@@ -21,8 +21,10 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import org.littletonrobotics.junction.Logger;
 
 /**
@@ -54,6 +56,16 @@ public class Drive extends SubsystemBase {
     Logger.processInputs("Drive", inputs);
     // Log the additional information about the modules
     io.logModules();
+  }
+
+  /**
+   * Returns a command that applies the specified control request to this swerve drivetrain.
+   *
+   * @param requestSupplier Function returning the request to apply
+   * @return Command to run
+   */
+  public Command applyRequest(Supplier<SwerveRequest> requestSupplier) {
+    return run(() -> this.setControl(requestSupplier.get()));
   }
 
   /**

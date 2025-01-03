@@ -5,6 +5,7 @@
 
 package com.team1165.robot;
 
+import com.team1165.robot.Constants.Mode;
 import edu.wpi.first.wpilibj.RobotBase;
 import java.util.Arrays;
 
@@ -22,8 +23,11 @@ public final class Main {
    * <p>If you change your main Robot class (name), change the parameter type.
    */
   public static void main(String... args) {
-    // Enable replay mode if specified
-    Constants.replayMode = Arrays.asList(args).contains("--replay");
+    // Set the robot mode based on current running conditions
+    Constants.robotMode =
+        RobotBase.isReal()
+            ? Mode.REAL
+            : (Arrays.asList(args).contains("--replay") ? Mode.REPLAY : Mode.SIM);
     // Start the main Robot class
     RobotBase.startRobot(Robot::new);
   }
