@@ -35,10 +35,21 @@ public class CommandSwerveDrivetrain {
     this.moduleConstants = modules;
   }
 
+  /**
+   * Get the {@link SwerveDrivetrainConstants} of this {@link CommandSwerveDrivetrain}.
+   *
+   * @return The {@link SwerveDrivetrainConstants} of this {@link CommandSwerveDrivetrain}.
+   */
   public SwerveDrivetrainConstants getDrivetrainConstants() {
     return drivetrainConstants;
   }
 
+  /**
+   * Get the {@link SwerveModuleConstants} of this {@link CommandSwerveDrivetrain}.
+   *
+   * @return The {@link SwerveModuleConstants} of this {@link CommandSwerveDrivetrain}. This is
+   *     returned in the order of [FrontLeft, FrontRight, BackLeft, BackRight].
+   */
   public SwerveModuleConstants[] getModuleConstants() {
     return moduleConstants;
   }

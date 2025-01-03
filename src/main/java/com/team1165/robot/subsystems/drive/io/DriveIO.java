@@ -34,11 +34,6 @@ public interface DriveIO {
   /** Class used to store the IO values of a CTRE Swerve Drivetrain. */
   class DriveIOInputs extends SwerveDrivetrain.SwerveDriveState
       implements LoggableInputs, Cloneable {
-    /** Class used to store the IO values of a CTRE Swerve Drivetrain. */
-    public DriveIOInputs() {
-      this.Pose = new Pose2d();
-    }
-
     /** Updates this {@link DriveIOInputs} from a {@link SwerveDrivetrain.SwerveDriveState}. */
     public void fromSwerveDriveState(SwerveDrivetrain.SwerveDriveState state) {
       this.Pose = state.Pose;
