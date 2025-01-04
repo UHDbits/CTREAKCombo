@@ -25,4 +25,77 @@
 </details>
 
 # Run Configurations
-## Build Robot
+### Build Robot
+<details>
+<summary>IntelliJ</summary>
+
+Just run the "Build Robot" run configuration by selecting it and hitting the play button.
+</details>
+<details>
+<summary>VS Code</summary>
+
+Open the Command Palette (Ctrl+Shift+P) and type ```WPILib: Build Robot Code```.
+</details>
+<details>
+<summary>Terminal/PowerShell</summary>
+
+Open the project folder in a Unix terminal or PowerShell, and run ```gradlew build```.
+</details>
+
+### Build & Deploy
+<details>
+<summary>IntelliJ</summary>
+
+Just run the "Build & Deploy" run configuration by selecting it and hitting the play button.
+</details>
+<details>
+<summary>VS Code</summary>
+
+Open the Command Palette (Ctrl+Shift+P) and type ```WPILib: Deploy Robot Code```. Or, use the keyboard shortcut "Shift+F5".
+</details>
+<details>
+<summary>Terminal/PowerShell</summary>
+
+Open the project folder in a Unix terminal or PowerShell, and run ```gradlew deploy```.
+</details>
+
+### Build & Deploy Robot with Debugging and Performance Profiling (with VisualVM or other JMX client)
+<details>
+<summary>IntelliJ</summary>
+
+Just run the "Build & Deploy Robot with Debugging and Performance Profiling" run configuration by selecting it and hitting the play button. Use IntelliJ's built-in debugger and some JMX client for performance profiling.
+</details>
+<details>
+<summary>VS Code/Terminal/PowerShell</summary>
+
+Open the project folder in a Unix terminal or PowerShell, and run ```gradlew deploy -PprofilingMode -PdebugMode=true```. Use any Java debugger and some JMX client for performance profiling.
+</details>
+
+### Build & Simulate
+<details>
+<summary>IntelliJ</summary>
+
+Just run the "Build & Simulate" run configuration by selecting it and hitting the play button. The Glass "simgui" will open by default, but you can also use Driver Station.
+</details>
+<details>
+<summary>VS Code</summary>
+
+Open the Command Palette (Ctrl+Shift+P) and type ```WPILib: Simulate Robot Code```. Or, use the keyboard shortcut "Shift+F5". You can select between "simgui", Driver Station, or both.
+</details>
+<details>
+<summary>Terminal/PowerShell</summary>
+
+Open the project folder in a Unix terminal or PowerShell, and run ```gradlew simulateJava```.
+</details>
+
+### Build & Replay
+<details>
+<summary>IntelliJ</summary>
+
+Just run the "Build & Replay" run configuration by selecting it and hitting the play button. Use [AdvantageScope](https://github.com/Mechanical-Advantage/AdvantageScope) to load and replay any log files.
+</details>
+<details>
+<summary>VS Code/Terminal/PowerShell</summary>
+
+Open the project folder in a Unix terminal or PowerShell, and run ```gradlew simulateJava -PreplayMode```. Use [AdvantageScope](https://github.com/Mechanical-Advantage/AdvantageScope) to load and replay any log files.
+</details>
