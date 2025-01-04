@@ -1,3 +1,10 @@
+<div align="center">
+
+![FRC 1165 - Team Paradise Banner](/images/banner.png)
+# 2025 Robot Code
+
+</div>
+
 # Setting Up Code Environment
 
 > [!NOTE]
@@ -17,11 +24,11 @@
 <details>
 <summary>VS Code Setup</summary>
 
-8. Install the latest version of [WPILib](https://github.com/wpilibsuite/allwpilib/releases) and it's built-in version of VS Code.
-9. Clone this repository using your favorite Git client, and open it in VS Code.
-10. Build the project once to make sure that all dependencies have been downloaded.
-11. (Optional) Add the [google-java-format extension](https://marketplace.visualstudio.com/items?itemName=JoseVSeb.google-java-format-for-vs-code) through VS Code's built in extension manager.
-12. (Optional) When/if you format code for the first time, make sure you select "Google Java Format for VS Code". Or, don't format, and just let spotless handle it when building.
+1. Install the latest version of [WPILib](https://github.com/wpilibsuite/allwpilib/releases) and it's built-in version of VS Code.
+2. Clone this repository using your favorite Git client, and open it in VS Code. 
+3. Build the project once to make sure that all dependencies have been downloaded.
+4. (Optional) Add the [google-java-format extension](https://marketplace.visualstudio.com/items?itemName=JoseVSeb.google-java-format-for-vs-code) through VS Code's built in extension manager.
+5. (Optional) When/if you format code for the first time, make sure you select "Google Java Format for VS Code". Or, don't format, and just let spotless handle it when building.
 </details>
 
 # Run Configurations
