@@ -21,6 +21,8 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import java.util.function.Consumer;
@@ -37,6 +39,9 @@ public class Drive extends SubsystemBase {
   private final DriveIO io;
   private final DriveIOInputs inputs = new DriveIOInputs();
 
+  // Create NetworkTables table to post Field2d
+  private final Field2d field = new Field2d();
+
   /**
    * Drive subsystem that uses the CTRE Swerve Library in order to control an ordinary swerve
    * drivebase/drivetrain. Any features/capabilities will be implemented here, instead of inside the
@@ -47,6 +52,8 @@ public class Drive extends SubsystemBase {
   public Drive(DriveIO io) {
     // Set the IO variable
     this.io = io;
+    // Put the Field2d value onto the dashboard
+    SmartDashboard.putData("Field", field);
   }
 
   @Override
@@ -56,6 +63,8 @@ public class Drive extends SubsystemBase {
     Logger.processInputs("Drive", inputs);
     // Log the additional information about the modules
     io.logModules();
+    // Update the Field2d object with the new pose
+    field.setRobotPose(inputs.Pose);
   }
 
   /**
