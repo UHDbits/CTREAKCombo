@@ -18,8 +18,8 @@ import com.ctre.phoenix6.swerve.SwerveModuleConstants;
  * file heavily.
  */
 public class CommandSwerveDrivetrain {
-  SwerveDrivetrainConstants drivetrainConstants;
-  SwerveModuleConstants[] moduleConstants;
+  final SwerveDrivetrainConstants drivetrainConstants;
+  final SwerveModuleConstants<?, ?, ?>[] moduleConstants;
 
   /**
    * A simple class that allows us to hold the constants from the TunerConstants output by the
@@ -30,7 +30,7 @@ public class CommandSwerveDrivetrain {
    * @param modules Constants for each specific module.
    */
   public CommandSwerveDrivetrain(
-      SwerveDrivetrainConstants drivetrainConstants, SwerveModuleConstants... modules) {
+      SwerveDrivetrainConstants drivetrainConstants, SwerveModuleConstants<?, ?, ?>... modules) {
     this.drivetrainConstants = drivetrainConstants;
     this.moduleConstants = modules;
   }
@@ -50,7 +50,7 @@ public class CommandSwerveDrivetrain {
    * @return The {@link SwerveModuleConstants} of this {@link CommandSwerveDrivetrain}. This is
    *     returned in the order of [FrontLeft, FrontRight, BackLeft, BackRight].
    */
-  public SwerveModuleConstants[] getModuleConstants() {
+  public SwerveModuleConstants<?, ?, ?>[] getModuleConstants() {
     return moduleConstants;
   }
 }

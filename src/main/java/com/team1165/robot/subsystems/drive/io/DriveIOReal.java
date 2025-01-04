@@ -9,6 +9,8 @@ package com.team1165.robot.subsystems.drive.io;
 
 import static edu.wpi.first.units.Units.Celsius;
 
+import com.ctre.phoenix6.hardware.CANcoder;
+import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.swerve.SwerveDrivetrain;
 import com.ctre.phoenix6.swerve.SwerveDrivetrainConstants;
@@ -105,7 +107,7 @@ public class DriveIOReal extends TunerSwerveDrivetrain implements DriveIO {
    */
   @Override
   public void logModules() {
-    SwerveModule[] modules = getModules();
+    SwerveModule<?, ?, ?>[] modules = getModules();
     for (int i = 0; i < modules.length; i++) {
       // Log drive motor applied voltage
       Logger.recordOutput(
