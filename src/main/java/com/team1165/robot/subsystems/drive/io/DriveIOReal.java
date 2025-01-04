@@ -14,6 +14,7 @@ import com.ctre.phoenix6.swerve.SwerveDrivetrain;
 import com.ctre.phoenix6.swerve.SwerveDrivetrainConstants;
 import com.ctre.phoenix6.swerve.SwerveModule;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants;
+import com.team1165.robot.subsystems.drive.constants.TunerConstants.TunerSwerveDrivetrain;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
@@ -23,7 +24,7 @@ import org.littletonrobotics.junction.Logger;
  * {@link DriveIO} class that implements the CTRE {@link SwerveDrivetrain} class, and makes it
  * partially AdvantageKit compatible.
  */
-public class DriveIOReal extends SwerveDrivetrain implements DriveIO {
+public class DriveIOReal extends TunerSwerveDrivetrain implements DriveIO {
   private final String[] moduleNames = {"Drive/FL/", "Drive/FR/", "Drive/BL/", "Drive/BR/"};
 
   /**
@@ -112,7 +113,8 @@ public class DriveIOReal extends SwerveDrivetrain implements DriveIO {
           modules[i].getDriveMotor().getMotorVoltage().getValue());
       // Log drive motor connection status
       Logger.recordOutput(
-          moduleNames[i] + "DriveMotor/Connected", modules[i].getDriveMotor().isConnected());
+          moduleNames[i] + "DriveMotor/Connected",
+          modules[i].getDriveMotor().getConnectedMotor() != null);
       // Log drive motor supply current
       Logger.recordOutput(
           moduleNames[i] + "DriveMotor/SupplyCurrent",
@@ -128,7 +130,8 @@ public class DriveIOReal extends SwerveDrivetrain implements DriveIO {
           modules[i].getSteerMotor().getMotorVoltage().getValue());
       // Log steer motor connection status
       Logger.recordOutput(
-          moduleNames[i] + "SteerMotor/Connected", modules[i].getSteerMotor().isConnected());
+          moduleNames[i] + "SteerMotor/Connected",
+          modules[i].getSteerMotor().getConnectedMotor() != null);
       // Log steer motor supply current
       Logger.recordOutput(
           moduleNames[i] + "SteerMotor/SupplyCurrent",
