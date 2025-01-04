@@ -9,8 +9,7 @@ package com.team1165.robot.subsystems.drive.io;
 
 import static edu.wpi.first.units.Units.Celsius;
 
-import com.ctre.phoenix6.hardware.CANcoder;
-import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.ConnectedMotorValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.swerve.SwerveDrivetrain;
 import com.ctre.phoenix6.swerve.SwerveDrivetrainConstants;
@@ -116,7 +115,7 @@ public class DriveIOReal extends TunerSwerveDrivetrain implements DriveIO {
       // Log drive motor connection status
       Logger.recordOutput(
           moduleNames[i] + "DriveMotor/Connected",
-          modules[i].getDriveMotor().getConnectedMotor() != null);
+          modules[i].getDriveMotor().getConnectedMotor().getValue() != ConnectedMotorValue.Unknown);
       // Log drive motor supply current
       Logger.recordOutput(
           moduleNames[i] + "DriveMotor/SupplyCurrent",
@@ -133,7 +132,7 @@ public class DriveIOReal extends TunerSwerveDrivetrain implements DriveIO {
       // Log steer motor connection status
       Logger.recordOutput(
           moduleNames[i] + "SteerMotor/Connected",
-          modules[i].getSteerMotor().getConnectedMotor() != null);
+          modules[i].getSteerMotor().getConnectedMotor().getValue() != ConnectedMotorValue.Unknown);
       // Log steer motor supply current
       Logger.recordOutput(
           moduleNames[i] + "SteerMotor/SupplyCurrent",
