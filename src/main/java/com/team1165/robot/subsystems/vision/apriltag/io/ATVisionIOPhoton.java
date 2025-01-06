@@ -1,14 +1,14 @@
 /*
+ * File originally made by: Mechanical Advantage - FRC 6328
+ * Copyright (c) 2024 Team 6328 (https://github.com/Mechanical-Advantage)
  * Copyright (c) 2025 Team Paradise - FRC 1165 (https://github.com/TeamParadise)
  *
  * Use of this source code is governed by the MIT License, which can be found in the LICENSE file at
  * the root directory of this project.
  */
-
 package com.team1165.robot.subsystems.vision.apriltag.io;
 
 import edu.wpi.first.math.geometry.Pose3d;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform3d;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -16,13 +16,13 @@ import java.util.List;
 import java.util.Set;
 import org.photonvision.PhotonCamera;
 
-/** IO implementation for real PhotonVision hardware. */
+/** {@link ATVisionIO} class that implements a AprilTag pose estimation camera powered by a coprocessor running PhotonVision. */
 public class ATVisionIOPhoton implements ATVisionIO {
-  protected final PhotonCamera camera;
-  protected final Transform3d robotToCamera;
+  private final PhotonCamera camera;
+  private final Transform3d robotToCamera;
 
   /**
-   * Creates a new VisionIOPhotonVision.
+   * Creates a new {@link ATVisionIOPhoton} with the specified constants.
    *
    * @param name The configured name of the camera.
    * @param robotToCamera The 3D position of the camera relative to the robot.
@@ -32,24 +32,20 @@ public class ATVisionIOPhoton implements ATVisionIO {
     this.robotToCamera = robotToCamera;
   }
 
+  /**
+   * Updates a {@link ATVisionIOInputs} instance with the latest updates from this {@link
+   * ATVisionIO}.
+   *
+   * @param inputs A {@link ATVisionIOInputs} instance to update.
+   */
   @Override
-  public void updateInputs(VisionIOInputs inputs) {
+  public void updateInputs(ATVisionIOInputs inputs) {
     inputs.connected = camera.isConnected();
 
     // Read new camera observations
     Set<Short> tagIds = new HashSet<>();
     List<PoseObservation> poseObservations = new LinkedList<>();
     for (var result : camera.getAllUnreadResults()) {
-      // Update latest target observation
-      if (result.hasTargets()) {
-        inputs.latestTargetObservation =
-            new TargetObservation(
-                Rotation2d.fromDegrees(result.getBestTarget().getYaw()),
-                Rotation2d.fromDegrees(result.getBestTarget().getPitch()));
-      } else {
-        inputs.latestTargetObservation = new TargetObservation(new Rotation2d(), new Rotation2d());
-      }
-
       // Add pose observation
       if (result.multitagResult.isPresent()) {
         var multitagResult = result.multitagResult.get();
@@ -75,8 +71,7 @@ public class ATVisionIOPhoton implements ATVisionIO {
                 robotPose, // 3D pose estimate
                 multitagResult.estimatedPose.ambiguity, // Ambiguity
                 multitagResult.fiducialIDsUsed.size(), // Tag count
-                totalTagDistance / result.targets.size(), // Average tag distance
-                PoseObservationType.PHOTONVISION)); // Observation type
+                totalTagDistance / result.targets.size())); // Average tag distance
       }
     }
 
