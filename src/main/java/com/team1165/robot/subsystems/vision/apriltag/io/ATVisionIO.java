@@ -19,7 +19,7 @@ import org.littletonrobotics.junction.AutoLog;
 public interface ATVisionIO {
   /** Class used to store the IO values of an AprilTag vision camera. */
   @AutoLog
-  public static class ATVisionIOInputs {
+  class ATVisionIOInputs {
     /** Value that represents if the camera is currently connected or not. */
     public boolean connected = false;
 

@@ -8,15 +8,21 @@
  */
 package com.team1165.robot.subsystems.vision.apriltag.io;
 
+import com.team1165.robot.subsystems.vision.apriltag.constants.ATVisionConstants;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import org.photonvision.PhotonCamera;
+import org.photonvision.targeting.PhotonTrackedTarget;
 
-/** {@link ATVisionIO} class that implements a AprilTag pose estimation camera powered by a coprocessor running PhotonVision. */
+/**
+ * {@link ATVisionIO} class that implements a AprilTag pose estimation camera powered by a
+ * coprocessor running PhotonVision.
+ */
 public class ATVisionIOPhoton implements ATVisionIO {
   private final PhotonCamera camera;
   private final Transform3d robotToCamera;
@@ -57,8 +63,8 @@ public class ATVisionIOPhoton implements ATVisionIO {
 
         // Calculate average tag distance
         double totalTagDistance = 0.0;
-        for (var target : result.targets) {
-          totalTagDistance += target.bestCameraToTarget.getTranslation().getNorm();
+        for (var tag : result.targets) {
+          totalTagDistance += tag.bestCameraToTarget.getTranslation().getNorm();
         }
 
         // Add tag IDs
@@ -72,6 +78,22 @@ public class ATVisionIOPhoton implements ATVisionIO {
                 multitagResult.estimatedPose.ambiguity, // Ambiguity
                 multitagResult.fiducialIDsUsed.size(), // Tag count
                 totalTagDistance / result.targets.size())); // Average tag distance
+      } else if (!result.targets.isEmpty()) { // Check and see if there are any targets at all
+        PhotonTrackedTarget tag = result.targets.get(0);
+        Optional<Pose3d> tagPose = ATVisionConstants.aprilTagLayout.getTagPose(tag.fiducialId);
+        if (tagPose.isPresent()) { // If there is a tag, run single tag calculation
+          tagIds.add((short) tag.fiducialId);
+          poseObservations.add(
+              new PoseObservation(
+                  result.getTimestampSeconds(),
+                  tagPose
+                      .get()
+                      .transformBy(tag.bestCameraToTarget.inverse())
+                      .transformBy(robotToCamera.inverse()),
+                  result.targets.get(0).poseAmbiguity,
+                  1,
+                  tag.bestCameraToTarget.getTranslation().getNorm()));
+        }
       }
     }
 
