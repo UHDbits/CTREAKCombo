@@ -16,7 +16,10 @@ import org.photonvision.simulation.PhotonCameraSim;
 import org.photonvision.simulation.SimCameraProperties;
 import org.photonvision.simulation.VisionSystemSim;
 
-/** IO implementation for physics sim using PhotonVision simulator. */
+/**
+ * {@link ATVisionIO} class that implements a AprilTag pose estimation camera powered by a
+ * simulated PhotonVision environment.
+ */
 public class ATVisionIOPhotonSim extends ATVisionIOPhoton {
   private static VisionSystemSim visionSim;
 

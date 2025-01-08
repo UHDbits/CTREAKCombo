@@ -46,6 +46,7 @@ public class ATVisionIOPhoton implements ATVisionIO {
    */
   @Override
   public void updateInputs(ATVisionIOInputs inputs) {
+    // Log if the camera is connected
     inputs.connected = camera.isConnected();
 
     // Read new camera observations
