@@ -1,4 +1,6 @@
 /*
+ * File originally made by: Mechanical Advantage - FRC 6328
+ * Copyright (c) 2024 Team 6328 (https://github.com/Mechanical-Advantage)
  * Copyright (c) 2025 Team Paradise - FRC 1165 (https://github.com/TeamParadise)
  *
  * Use of this source code is governed by the MIT License, which can be found in the LICENSE file at
@@ -17,23 +19,25 @@ import org.photonvision.simulation.SimCameraProperties;
 import org.photonvision.simulation.VisionSystemSim;
 
 /**
- * {@link ATVisionIO} class that implements a AprilTag pose estimation camera powered by a
- * simulated PhotonVision environment.
+ * {@link ATVisionIO} class that implements a AprilTag pose estimation camera powered by a simulated
+ * PhotonVision environment.
  */
 public class ATVisionIOPhotonSim extends ATVisionIOPhoton {
-  private static VisionSystemSim visionSim;
+  // Vision simulation environment with all targets and cameras
+  private final VisionSystemSim visionSim;
 
   private final Supplier<Pose2d> poseSupplier;
   private final PhotonCameraSim cameraSim;
 
   /**
-   * Creates a new VisionIOPhotonVisionSim.
+   * Creates a new ATVisionIOPhotonSim.
    *
    * @param name The name of the camera.
    * @param poseSupplier Supplier for the robot pose to use in simulation.
    */
   public ATVisionIOPhotonSim(
       String name, Transform3d robotToCamera, Supplier<Pose2d> poseSupplier) {
+    // Call constructor from
     super(name, robotToCamera);
     this.poseSupplier = poseSupplier;
 
