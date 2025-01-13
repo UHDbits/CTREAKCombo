@@ -7,63 +7,74 @@
 
 package com.team1165.robot.subsystems.drive.io;
 
-import com.ctre.phoenix6.Utils;
-import com.ctre.phoenix6.swerve.SwerveDrivetrain;
-import com.ctre.phoenix6.swerve.SwerveDrivetrainConstants;
+import com.ctre.phoenix6.configs.CANcoderConfiguration;
+import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.hardware.CANcoder;
+import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.sim.CANcoderSimState;
+import com.ctre.phoenix6.sim.Pigeon2SimState;
+import com.ctre.phoenix6.sim.TalonFXSimState;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants;
-import edu.wpi.first.wpilibj.Notifier;
-import edu.wpi.first.wpilibj.RobotController;
+import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.Voltage;
+import org.ironmaple.simulation.drivesims.SwerveModuleSimulation;
+import org.ironmaple.simulation.motorsims.SimulatedBattery;
+import org.ironmaple.simulation.motorsims.SimulatedMotorController;
 
 public class DriveIOMapleSim {
-  /**
-   * Constructs a {@link DriveIOSim} using the specified constants.
-   *
-   * <p>This constructs the underlying simulated hardware devices, so users should not construct the
-   * devices themselves.
-   *
-   * @param drivetrainConstants Drivetrain-wide constants for the swerve drive
-   * @param modules Constants for each specific module
-   */
-  public DriveIOSim(
-      SwerveDrivetrainConstants drivetrainConstants, SwerveModuleConstants... modules) {
-    super(drivetrainConstants, modules);
-    startSimThread();
+  private final Pigeon2SimState pigeonSim;
+  private final SimSwerveModule[] simModules;
+
+  private static class SimSwerveModule {
+    private final SwerveModuleSimulation moduleSimulation;
+
+    public SimSwerveModule()
   }
 
   /**
-   * Constructs a {@link DriveIOSim} using the specified constants.
-   *
-   * <p>This constructs the underlying simulated hardware devices, so users should not construct the
-   * devices themselves.
-   *
-   * @param drivetrainConstants Drivetrain-wide constants for the swerve drive
-   * @param odometryUpdateFrequency The frequency to run the odometry loop. If unspecified or set to
-   *     0 Hz, this is 250 Hz on CAN FD, and 100 Hz on CAN 2.0.
-   * @param modules Constants for each specific module
+   * Class used to wrap a Talon FX's simulation state ({@link TalonFXSimState}) in a {@link SimulatedMotorController}, in order to update the simulation state with the values from a {@link SwerveModuleSimulation}.
    */
-  public DriveIOSim(
-      SwerveDrivetrainConstants drivetrainConstants,
-      double odometryUpdateFrequency,
-      SwerveModuleConstants... modules) {
-    super(drivetrainConstants, odometryUpdateFrequency, modules);
-    startSimThread();
+  public static class SimulatedTalonFX implements SimulatedMotorController {
+    private final TalonFXSimState motorSimState;
+
+    public SimulatedTalonFX(TalonFX motor) {
+      this.motorSimState = motor.getSimState();
+    }
+
+    @Override
+    public Voltage updateControlSignal(
+        Angle mechanismAngle,
+        AngularVelocity mechanismVelocity,
+        Angle encoderAngle,
+        AngularVelocity encoderVelocity) {
+      motorSimState.setRawRotorPosition(encoderAngle);
+      motorSimState.setRotorVelocity(encoderVelocity);
+      motorSimState.setSupplyVoltage(SimulatedBattery.getBatteryVoltage());
+
+      return motorSimState.getMotorVoltageMeasure();
+    }
   }
 
-  /** Start the simulation thread to update the simulation state of the {@link SwerveDrivetrain}. */
-  private void startSimThread() {
-    lastSimTime = Utils.getCurrentTimeSeconds();
+  public static class SimulatedTalonFXWithCANcoder extends SimulatedTalonFX {
+    private final CANcoderSimState encoderSimState;
 
-    /* Run simulation at a faster rate so PID gains behave more reasonably */
-    simNotifier =
-        new Notifier(
-            () -> {
-              final double currentTime = Utils.getCurrentTimeSeconds();
-              double deltaTime = currentTime - lastSimTime;
-              lastSimTime = currentTime;
+    public SimulatedTalonFXWithCANcoder(TalonFX motor, CANcoder encoder) {
+      super(motor);
+      this.encoderSimState = encoder.getSimState();
+    }
 
-              /* use the measured time delta, get battery voltage from WPILib */
-              updateSimState(deltaTime, RobotController.getBatteryVoltage());
-            });
-    simNotifier.startPeriodic(simLoopPeriod);
+    @Override
+    public Voltage updateControlSignal(
+        Angle mechanismAngle,
+        AngularVelocity mechanismVelocity,
+        Angle encoderAngle,
+        AngularVelocity encoderVelocity) {
+      encoderSimState.setSupplyVoltage(SimulatedBattery.getBatteryVoltage());
+      encoderSimState.setRawPosition(mechanismAngle);
+      encoderSimState.setVelocity(mechanismVelocity);
+
+      return super.updateControlSignal(mechanismAngle, mechanismVelocity, encoderAngle, encoderVelocity);
+    }
   }
 }
