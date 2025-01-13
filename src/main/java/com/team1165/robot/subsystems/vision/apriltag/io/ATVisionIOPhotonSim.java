@@ -1,6 +1,6 @@
 /*
  * File originally made by: Mechanical Advantage - FRC 6328
- * Copyright (c) 2024 Team 6328 (https://github.com/Mechanical-Advantage)
+ * Copyright (c) 2025 Team 6328 (https://github.com/Mechanical-Advantage)
  * Copyright (c) 2025 Team Paradise - FRC 1165 (https://github.com/TeamParadise)
  *
  * Use of this source code is governed by the MIT License, which can be found in the LICENSE file at
@@ -24,7 +24,7 @@ import org.photonvision.simulation.VisionSystemSim;
  */
 public class ATVisionIOPhotonSim extends ATVisionIOPhoton {
   // Vision simulation environment with all targets and cameras
-  private final VisionSystemSim visionSim;
+  private static VisionSystemSim visionSim;
 
   private final Supplier<Pose2d> poseSupplier;
   private final PhotonCameraSim cameraSim;
@@ -54,7 +54,7 @@ public class ATVisionIOPhotonSim extends ATVisionIOPhoton {
   }
 
   @Override
-  public void updateInputs(VisionIOInputs inputs) {
+  public void updateInputs(ATVisionIOInputs inputs) {
     visionSim.update(poseSupplier.get());
     super.updateInputs(inputs);
   }

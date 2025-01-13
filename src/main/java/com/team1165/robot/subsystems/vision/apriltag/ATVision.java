@@ -1,4 +1,6 @@
 /*
+ * File originally made by: Mechanical Advantage - FRC 6328
+ * Copyright (c) 2025 Team 6328 (https://github.com/Mechanical-Advantage)
  * Copyright (c) 2025 Team Paradise - FRC 1165 (https://github.com/TeamParadise)
  *
  * Use of this source code is governed by the MIT License, which can be found in the LICENSE file at
@@ -8,8 +10,6 @@
 package com.team1165.robot.subsystems.vision.apriltag;
 
 import static com.team1165.robot.subsystems.vision.apriltag.constants.ATVisionConstants.*;
-
-import com.team1165.robot.subsystems.vision.apriltag.io.ATVisionIO.PoseObservationType;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -25,12 +25,13 @@ import java.util.List;
 import org.littletonrobotics.junction.Logger;
 
 public class ATVision extends SubsystemBase {
-  private final VisionConsumer consumer;
-  private final VisionIO[] io;
-  private final VisionIOInputsAutoLogged[] inputs;
+  // Consumer to
+  private final ATVisionConsumer consumer;
+  private final ATVisionIO[] io;
+  private final ATVisionIOInputsAutoLogged[] inputs;
   private final Alert[] disconnectedAlerts;
 
-  public ATVision(VisionConsumer consumer, VisionIO... io) {
+  public ATVision(ATVisionConsumer consumer, VisionIO... io) {
     this.consumer = consumer;
     this.io = io;
 
@@ -173,7 +174,7 @@ public class ATVision extends SubsystemBase {
   }
 
   @FunctionalInterface
-  public static interface VisionConsumer {
+  public static interface ATVisionConsumer {
     public void accept(
         Pose2d visionRobotPoseMeters,
         double timestampSeconds,

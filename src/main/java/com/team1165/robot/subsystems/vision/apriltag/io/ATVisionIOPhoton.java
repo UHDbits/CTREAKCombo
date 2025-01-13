@@ -1,6 +1,6 @@
 /*
  * File originally made by: Mechanical Advantage - FRC 6328
- * Copyright (c) 2024 Team 6328 (https://github.com/Mechanical-Advantage)
+ * Copyright (c) 2025 Team 6328 (https://github.com/Mechanical-Advantage)
  * Copyright (c) 2025 Team Paradise - FRC 1165 (https://github.com/TeamParadise)
  *
  * Use of this source code is governed by the MIT License, which can be found in the LICENSE file at
@@ -57,7 +57,7 @@ public class ATVisionIOPhoton implements ATVisionIO {
 
     // Read new camera observations
     for (var result : camera.getAllUnreadResults()) {
-      // If we can use MultiTag, use MultiTag instead of single tag
+      // Use MultiTag instead of single tag, if possible
       if (result.multitagResult.isPresent()) {
         // Get latest MultiTag result
         var multitagResult = result.multitagResult.get();

@@ -44,6 +44,4 @@ public class ATVisionConstants {
         1.0, // Camera 0
         1.0 // Camera 1
       };
-
-
 }
