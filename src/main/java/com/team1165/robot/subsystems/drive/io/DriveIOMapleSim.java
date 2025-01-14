@@ -14,6 +14,7 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.sim.CANcoderSimState;
 import com.ctre.phoenix6.sim.Pigeon2SimState;
 import com.ctre.phoenix6.sim.TalonFXSimState;
+import com.ctre.phoenix6.swerve.SwerveModule;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
@@ -24,24 +25,44 @@ import org.ironmaple.simulation.motorsims.SimulatedMotorController;
 
 public class DriveIOMapleSim {
   private final Pigeon2SimState pigeonSim;
-  private final SimSwerveModule[] simModules;
+
 
   private static class SimSwerveModule {
     private final SwerveModuleSimulation moduleSimulation;
 
-    public SimSwerveModule()
+    public SimSwerveModule(SwerveModuleSimulation moduleSimulation, SwerveModule<TalonFX, TalonFX, CANcoder> module) {
+      this.moduleSimulation = moduleSimulation;
+      moduleSimulation.useDriveMotorController(new SimulatedTalonFX(module.getDriveMotor()));
+      moduleSimulation.useSteerMotorController(new SimulatedTalonFXWithCANcoder(module.getSteerMotor(), module.getEncoder()));
+    }
   }
+
+
 
   /**
    * Class used to wrap a Talon FX's simulation state ({@link TalonFXSimState}) in a {@link SimulatedMotorController}, in order to update the simulation state with the values from a {@link SwerveModuleSimulation}.
    */
   public static class SimulatedTalonFX implements SimulatedMotorController {
+    // Simulation state of a Talon FX
     private final TalonFXSimState motorSimState;
 
+    /**
+     * Constructs a {@link SimulatedTalonFX} with the provided {@link TalonFX}.
+     *
+     * @param motor The {@link TalonFX} that this {@link SimulatedTalonFX} will update the simulation state of.
+     */
     public SimulatedTalonFX(TalonFX motor) {
+      // Get the simulation state of the Talon FX
       this.motorSimState = motor.getSimState();
     }
 
+    /** Update the {@link TalonFXSimState} of this {@link SimulatedTalonFX} with the new simulated values.
+     *
+     * @param mechanismAngle The angle of the mechanism the Talon FX is controlling. This is the angle reported by the encoder divided by the gear ratio.
+     * @param mechanismVelocity The velocity of the mechanism the Talon FX is controlling. This is the velocity reported by the encoder divided by the gear ratio.
+     * @param encoderAngle The angle of the encoder of the Talon FX. This is the direct angle reported by the encoder.
+     * @param encoderVelocity The velocity of the encoder of the Talon FX. This is the direct velocity reported by the encoder.
+     */
     @Override
     public Voltage updateControlSignal(
         Angle mechanismAngle,
