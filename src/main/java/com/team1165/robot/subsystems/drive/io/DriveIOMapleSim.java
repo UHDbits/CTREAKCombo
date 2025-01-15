@@ -93,28 +93,39 @@ public class DriveIOMapleSim extends DriveIOReal {
     for (int i = 0; i < moduleSimulations.length; i++) {
       var module = getModule(i);
       moduleSimulations[i].useDriveMotorController(new SimulatedTalonFX(module.getDriveMotor()));
-      moduleSimulations[i].useSteerMotorController(new SimulatedTalonFXWithCANcoder(module.getSteerMotor(), module.getEncoder()));
+      moduleSimulations[i].useSteerMotorController(
+          new SimulatedTalonFXWithCANcoder(module.getSteerMotor(), module.getEncoder()));
     }
 
     startSimThread();
   }
 
-  /** Start the simulation thread to update the simulation state of the {@link SwerveDriveSimulation}. */
+  /**
+   * Start the simulation thread to update the simulation state of the {@link
+   * SwerveDriveSimulation}.
+   */
   public void startSimThread() {
-    simNotifier = new Notifier(
-        () -> {
-          SimulatedArena.getInstance().simulationPeriodic();
-          gyroSimState.setRawYaw(driveSim.getSimulatedDriveTrainPose().getRotation().getMeasure());
-          gyroSimState.setAngularVelocityZ(
-              RadiansPerSecond.of(
-                  driveSim.getDriveTrainSimulatedChassisSpeedsRobotRelative().omegaRadiansPerSecond));
-        }
-    );
+    simNotifier =
+        new Notifier(
+            () -> {
+              SimulatedArena.getInstance().simulationPeriodic();
+              gyroSimState.setRawYaw(
+                  driveSim.getSimulatedDriveTrainPose().getRotation().getMeasure());
+              gyroSimState.setAngularVelocityZ(
+                  RadiansPerSecond.of(
+                      driveSim.getDriveTrainSimulatedChassisSpeedsRobotRelative()
+                          .omegaRadiansPerSecond));
+            });
     simNotifier.startPeriodic(DriveConstants.simulationLoopPeriod);
   }
 
-  public static SwerveModuleConstants<TalonFXConfiguration, TalonFXConfiguration, CANcoderConfiguration>[] regulateModuleConstantsForSimulation(SwerveModuleConstants<TalonFXConfiguration, TalonFXConfiguration, CANcoderConfiguration>... moduleConstants) {
-    for (SwerveModuleConstants<TalonFXConfiguration, TalonFXConfiguration, CANcoderConfiguration> moduleConstant : moduleConstants) {
+  public static SwerveModuleConstants<
+          TalonFXConfiguration, TalonFXConfiguration, CANcoderConfiguration>
+      [] regulateModuleConstantsForSimulation(
+      SwerveModuleConstants<TalonFXConfiguration, TalonFXConfiguration, CANcoderConfiguration>...
+          moduleConstants) {
+    for (SwerveModuleConstants<TalonFXConfiguration, TalonFXConfiguration, CANcoderConfiguration>
+        moduleConstant : moduleConstants) {
       // Apply simulation-specific adjustments to module constants
       moduleConstant
           // Disable encoder offsets
@@ -125,10 +136,11 @@ public class DriveIOMapleSim extends DriveIOReal {
           // Disable CanCoder inversion
           .withEncoderInverted(false)
           // Adjust steer motor PID gains for simulation
-          .withSteerMotorGains(moduleConstant
-              .SteerMotorGains
-              .withKP(70) // Proportional gain
-              .withKD(4.5)) // Derivative gain
+          .withSteerMotorGains(
+              moduleConstant
+                  .SteerMotorGains
+                  .withKP(70) // Proportional gain
+                  .withKD(4.5)) // Derivative gain
           // Adjust friction voltages
           .withDriveFrictionVoltage(Volts.of(0.1))
           .withSteerFrictionVoltage(Volts.of(0.15))
@@ -246,7 +258,8 @@ public class DriveIOMapleSim extends DriveIOReal {
    * @param bumperWidthY The width of the bumpers in the Y direction.
    * @param driveMotorModel The model of the drive motor on this simulated swerve module.
    * @param steerMotorModel The model of the steer motor on this simulated swerve module.
-   * @param wheelCOF The COF (coefficient of friction) of the drive wheel. Look at {@link org.ironmaple.simulation.drivesims.COTS.WHEELS} for some examples.
+   * @param wheelCOF The COF (coefficient of friction) of the drive wheel. Look at {@link
+   *     org.ironmaple.simulation.drivesims.COTS.WHEELS} for some examples.
    * @param moduleLocations The locations of the modules on the drivetrain.
    */
   public record MapleSimConfig(

@@ -48,7 +48,8 @@ public class DriveIOSim extends DriveIOReal {
       Matrix<N3, N1> odometryStandardDeviation,
       Matrix<N3, N1> visionStandardDeviation,
       SwerveModuleConstants... modules) {
-    super(drivetrainConstants,
+    super(
+        drivetrainConstants,
         odometryUpdateFrequency,
         odometryStandardDeviation,
         visionStandardDeviation,
