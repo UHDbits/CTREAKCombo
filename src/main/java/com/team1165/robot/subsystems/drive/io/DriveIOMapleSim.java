@@ -19,7 +19,9 @@ import com.ctre.phoenix6.sim.Pigeon2SimState;
 import com.ctre.phoenix6.sim.TalonFXSimState;
 import com.ctre.phoenix6.swerve.SwerveDrivetrainConstants;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants;
+import com.team1165.robot.subsystems.drive.constants.DriveConstants;
 import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
@@ -29,6 +31,7 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.Mass;
 import edu.wpi.first.units.measure.Voltage;
+import edu.wpi.first.wpilibj.Notifier;
 import org.ironmaple.simulation.SimulatedArena;
 import org.ironmaple.simulation.drivesims.COTS;
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
@@ -41,6 +44,7 @@ import org.ironmaple.simulation.motorsims.SimulatedMotorController;
 public class DriveIOMapleSim extends DriveIOReal {
   private final Pigeon2SimState gyroSimState;
   private final SwerveDriveSimulation driveSim;
+  private Notifier simNotifier = null;
 
   /**
    * Constructs a {@link DriveIOMapleSim} using the specified constants.
@@ -79,24 +83,31 @@ public class DriveIOMapleSim extends DriveIOReal {
                     Meters.of(modules[0].WheelRadius),
                     KilogramSquareMeters.of(modules[0].SteerInertia),
                     simConfig.wheelCOF()));
+
+    driveSim = new SwerveDriveSimulation(drivetrainSimConfig, new Pose2d());
+
+    SwerveModuleSimulation[] moduleSimulations = driveSim.getModules();
+    for (int i = 0; i < moduleSimulations.length; i++) {
+      var module = getModule(i);
+      moduleSimulations[i].useDriveMotorController(new SimulatedTalonFX(module.getDriveMotor()));
+      moduleSimulations[i].useSteerMotorController(new SimulatedTalonFXWithCANcoder(module.getSteerMotor(), module.getEncoder()));
+    }
+
+    startSimThread();
   }
 
-  /**
-   * Updates a {@link DriveIOInputs} instance with the latest updates from this {@link
-   * DriveIOMapleSim}.
-   *
-   * @param inputs A {@link DriveIOInputs} instance to update.
-   */
-  @Override
-  public void updateInputs(DriveIOInputs inputs) {
-    // Update the inputs passed in with the current SwerveDriveState
-    inputs.fromSwerveDriveState(getState());
-
-    SimulatedArena.getInstance().simulationPeriodic();
-    gyroSimState.setRawYaw(driveSim.getSimulatedDriveTrainPose().getRotation().getMeasure());
-    gyroSimState.setAngularVelocityZ(
-        RadiansPerSecond.of(
-            driveSim.getDriveTrainSimulatedChassisSpeedsRobotRelative().omegaRadiansPerSecond));
+  /** Start the simulation thread to update the simulation state of the {@link SwerveDriveSimulation}. */
+  public void startSimThread() {
+    simNotifier = new Notifier(
+        () -> {
+          SimulatedArena.getInstance().simulationPeriodic();
+          gyroSimState.setRawYaw(driveSim.getSimulatedDriveTrainPose().getRotation().getMeasure());
+          gyroSimState.setAngularVelocityZ(
+              RadiansPerSecond.of(
+                  driveSim.getDriveTrainSimulatedChassisSpeedsRobotRelative().omegaRadiansPerSecond));
+        }
+    );
+    simNotifier.startPeriodic(DriveConstants.simulationLoopPeriod);
   }
 
   /**

@@ -7,10 +7,7 @@
 
 package com.team1165.robot.subsystems.drive.constants;
 
-import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.system.plant.DCMotor;
-import edu.wpi.first.units.measure.Distance;
-import edu.wpi.first.units.measure.Mass;
-
 public class DriveConstants {
+  /** How often the simulation thread should be run. */
+  public final static double simulationLoopPeriod = 0.005;
 }
