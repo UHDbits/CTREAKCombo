@@ -12,6 +12,8 @@ import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.Volts;
 
+import com.ctre.phoenix6.configs.CANcoderConfiguration;
+import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.sim.CANcoderSimState;
@@ -20,6 +22,7 @@ import com.ctre.phoenix6.sim.TalonFXSimState;
 import com.ctre.phoenix6.swerve.SwerveDrivetrainConstants;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants;
 import com.team1165.robot.subsystems.drive.constants.DriveConstants;
+import com.team1165.robot.subsystems.drive.constants.TunerConstants;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -108,6 +111,32 @@ public class DriveIOMapleSim extends DriveIOReal {
         }
     );
     simNotifier.startPeriodic(DriveConstants.simulationLoopPeriod);
+  }
+
+  public static SwerveModuleConstants<TalonFXConfiguration, TalonFXConfiguration, CANcoderConfiguration>[] regulateModuleConstantsForSimulation(SwerveModuleConstants<TalonFXConfiguration, TalonFXConfiguration, CANcoderConfiguration>... moduleConstants) {
+    for (SwerveModuleConstants<TalonFXConfiguration, TalonFXConfiguration, CANcoderConfiguration> moduleConstant : moduleConstants) {
+      // Apply simulation-specific adjustments to module constants
+      moduleConstant
+          // Disable encoder offsets
+          .withEncoderOffset(0)
+          // Disable motor inversions for drive and steer motors
+          .withDriveMotorInverted(false)
+          .withSteerMotorInverted(false)
+          // Disable CanCoder inversion
+          .withEncoderInverted(false)
+          // Adjust steer motor PID gains for simulation
+          .withSteerMotorGains(moduleConstant
+              .SteerMotorGains
+              .withKP(70) // Proportional gain
+              .withKD(4.5)) // Derivative gain
+          // Adjust friction voltages
+          .withDriveFrictionVoltage(Volts.of(0.1))
+          .withSteerFrictionVoltage(Volts.of(0.15))
+          // Adjust steer inertia
+          .withSteerInertia(KilogramSquareMeters.of(0.05));
+    }
+
+    return moduleConstants;
   }
 
   /**
@@ -208,6 +237,18 @@ public class DriveIOMapleSim extends DriveIOReal {
     }
   }
 
+  /**
+   * A configuration class for a {@link DriveIOMapleSim}, in order to provide values not provided by
+   * the {@link TunerConstants} of the CTRE Swerve Library. A lot of these value's can be
+   *
+   * @param robotMassWithBumpers The {@link Mass} of the robot on the competition field.
+   * @param bumperLengthX The length of the bumpers in the X direction.
+   * @param bumperWidthY The width of the bumpers in the Y direction.
+   * @param driveMotorModel The model of the drive motor on this simulated swerve module.
+   * @param steerMotorModel The model of the steer motor on this simulated swerve module.
+   * @param wheelCOF The COF (coefficient of friction) of the drive wheel. Look at {@link org.ironmaple.simulation.drivesims.COTS.WHEELS} for some examples.
+   * @param moduleLocations The locations of the modules on the drivetrain.
+   */
   public record MapleSimConfig(
       Mass robotMassWithBumpers,
       Distance bumperLengthX,
