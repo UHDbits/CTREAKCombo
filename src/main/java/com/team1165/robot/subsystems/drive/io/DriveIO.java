@@ -86,7 +86,7 @@ public interface DriveIO {
    *
    * <p>This is equivalent to calling {@link #resetRotation} with the operator perspective rotation.
    */
-  default void seedFeedCentric() {}
+  default void seedFieldCentric() {}
 
   /**
    * Resets the pose of the robot. The pose should be from the {@link
@@ -191,8 +191,7 @@ public interface DriveIO {
   default void setVisionMeasurementStdDevs(Matrix<N3, N1> visionMeasurementStdDevs) {}
 
   /** Class used to store the IO values of a CTRE Swerve Drivetrain. */
-  class DriveIOInputs extends SwerveDriveState
-      implements LoggableInputs, Cloneable {
+  class DriveIOInputs extends SwerveDriveState implements LoggableInputs, Cloneable {
     /** Updates this {@link DriveIOInputs} from a {@link SwerveDriveState}. */
     public void fromSwerveDriveState(SwerveDriveState state) {
       this.Pose = state.Pose;

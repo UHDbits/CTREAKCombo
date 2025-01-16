@@ -24,8 +24,8 @@ import edu.wpi.first.wpilibj.RobotController;
  * update the simulation state of the drivetrain.
  */
 public class DriveIOSim extends DriveIOReal {
-  private Notifier simNotifier = null;
   private double lastSimTime;
+  private Notifier simNotifier = null;
 
   /**
    * Constructs a {@link DriveIOSim} using the specified constants.
@@ -33,14 +33,14 @@ public class DriveIOSim extends DriveIOReal {
    * <p>This constructs the underlying hardware devices, so users should not construct the devices
    * themselves.
    *
-   * @param drivetrainConstants Drivetrain-wide constants for the swerve drive
+   * @param drivetrainConstants Drivetrain-wide constants for the swerve drive.
    * @param odometryUpdateFrequency The frequency to run the odometry loop. If unspecified or set to
    *     0 Hz, this is 250 Hz on CAN FD, and 100 Hz on CAN 2.0.
    * @param odometryStandardDeviation The standard deviation for odometry calculation in the form
-   *     [x, y, theta]ᵀ, with units in meters and radians
+   *     [x, y, theta]ᵀ, with units in meters and radians.
    * @param visionStandardDeviation The standard deviation for vision calculation in the form [x, y,
-   *     theta]ᵀ, with units in meters and radians
-   * @param modules Constants for each specific module
+   *     theta]ᵀ, with units in meters and radians.
+   * @param modules Constants for each specific module.
    */
   public DriveIOSim(
       SwerveDrivetrainConstants drivetrainConstants,
@@ -63,10 +63,10 @@ public class DriveIOSim extends DriveIOReal {
    * <p>This constructs the underlying simulated hardware devices, so users should not construct the
    * devices themselves.
    *
-   * @param drivetrainConstants Drivetrain-wide constants for the swerve drive
+   * @param drivetrainConstants Drivetrain-wide constants for the swerve drive.
    * @param odometryUpdateFrequency The frequency to run the odometry loop. If unspecified or set to
    *     0 Hz, this is 250 Hz on CAN FD, and 100 Hz on CAN 2.0.
-   * @param modules Constants for each specific module
+   * @param modules Constants for each specific module.
    */
   public DriveIOSim(
       SwerveDrivetrainConstants drivetrainConstants,
@@ -82,8 +82,8 @@ public class DriveIOSim extends DriveIOReal {
    * <p>This constructs the underlying simulated hardware devices, so users should not construct the
    * devices themselves.
    *
-   * @param drivetrainConstants Drivetrain-wide constants for the swerve drive
-   * @param modules Constants for each specific module
+   * @param drivetrainConstants Drivetrain-wide constants for the swerve drive.
+   * @param modules Constants for each specific module.
    */
   public DriveIOSim(
       SwerveDrivetrainConstants drivetrainConstants, SwerveModuleConstants... modules) {
@@ -95,7 +95,7 @@ public class DriveIOSim extends DriveIOReal {
   private void startSimThread() {
     lastSimTime = Utils.getCurrentTimeSeconds();
 
-    /* Run simulation at a faster rate so PID gains behave more reasonably */
+    // Run simulation at a faster rate so PID gains behave more reasonably
     simNotifier =
         new Notifier(
             () -> {
@@ -103,7 +103,7 @@ public class DriveIOSim extends DriveIOReal {
               double deltaTime = currentTime - lastSimTime;
               lastSimTime = currentTime;
 
-              /* use the measured time delta, get battery voltage from WPILib */
+              // Use the measured time delta, get battery voltage from WPILib
               updateSimState(deltaTime, RobotController.getBatteryVoltage());
             });
     simNotifier.startPeriodic(DriveConstants.simulationLoopPeriod);

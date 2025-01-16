@@ -37,7 +37,6 @@ import edu.wpi.first.units.measure.Mass;
 import edu.wpi.first.units.measure.Time;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj.Notifier;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import org.ironmaple.simulation.SimulatedArena;
 import org.ironmaple.simulation.drivesims.COTS;
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
@@ -77,7 +76,7 @@ public class DriveIOMapleSim extends DriveIOReal {
    * @param steerMotorModel The model of the steer motor on this simulated swerve module.
    * @param wheelCOF The COF (coefficient of friction) of the drive wheel. Look at {@link
    *     org.ironmaple.simulation.drivesims.COTS.WHEELS} for some examples.
-   * @param modules Constants for each specific module
+   * @param modules Constants for each specific module.
    */
   public DriveIOMapleSim(
       SwerveDrivetrainConstants drivetrainConstants,
@@ -91,13 +90,14 @@ public class DriveIOMapleSim extends DriveIOReal {
       DCMotor driveMotorModel,
       DCMotor steerMotorModel,
       double wheelCOF,
-      SwerveModuleConstants... modules) {
+      SwerveModuleConstants<TalonFXConfiguration, TalonFXConfiguration, CANcoderConfiguration>... modules) {
     super(
         drivetrainConstants,
         odometryUpdateFrequency,
         odometryStandardDeviation,
         visionStandardDeviation,
-        modules);
+        regulateModuleConstantsForSimulation(modules));
+
     this.gyroSimState = getPigeon2().getSimState();
     var drivetrainSimConfig =
         DriveTrainSimulationConfig.Default()
@@ -128,14 +128,6 @@ public class DriveIOMapleSim extends DriveIOReal {
           new SimulatedTalonFXWithCANcoder(module.getSteerMotor(), module.getEncoder()));
     }
 
-    startSimThread(simLoopPeriod);
-  }
-
-  /**
-   * Start the simulation thread to update the simulation state of the {@link
-   * SwerveDriveSimulation}.
-   */
-  public void startSimThread(Time simLoopPeriod) {
     simNotifier =
         new Notifier(
             () -> {
@@ -149,6 +141,8 @@ public class DriveIOMapleSim extends DriveIOReal {
             });
     simNotifier.startPeriodic(simLoopPeriod.in(Seconds));
   }
+
+  private void createSimulationConfig
 
   /**
    * Updates a {@link DriveIOInputs} instance with the latest updates from this {@link DriveIO}.

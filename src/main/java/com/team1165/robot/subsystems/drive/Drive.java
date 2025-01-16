@@ -128,8 +128,8 @@ public class Drive extends SubsystemBase {
    *
    * <p>This is equivalent to calling {@link #resetRotation} with the operator perspective rotation.
    */
-  public void seedFeedCentric() {
-    io.tareEverything();
+  public void seedFieldCentric() {
+    io.seedFieldCentric();
   }
 
   /**
