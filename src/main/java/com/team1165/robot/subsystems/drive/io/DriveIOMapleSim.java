@@ -10,6 +10,7 @@ package com.team1165.robot.subsystems.drive.io;
 import static edu.wpi.first.units.Units.KilogramSquareMeters;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
+import static edu.wpi.first.units.Units.Seconds;
 import static edu.wpi.first.units.Units.Volts;
 
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
@@ -19,9 +20,9 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.sim.CANcoderSimState;
 import com.ctre.phoenix6.sim.Pigeon2SimState;
 import com.ctre.phoenix6.sim.TalonFXSimState;
+import com.ctre.phoenix6.swerve.SwerveDrivetrain;
 import com.ctre.phoenix6.swerve.SwerveDrivetrainConstants;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants;
-import com.team1165.robot.subsystems.drive.constants.DriveConstants;
 import com.team1165.robot.subsystems.drive.constants.TunerConstants;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -33,8 +34,10 @@ import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.Mass;
+import edu.wpi.first.units.measure.Time;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj.Notifier;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import org.ironmaple.simulation.SimulatedArena;
 import org.ironmaple.simulation.drivesims.COTS;
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
@@ -43,24 +46,51 @@ import org.ironmaple.simulation.drivesims.configs.DriveTrainSimulationConfig;
 import org.ironmaple.simulation.drivesims.configs.SwerveModuleSimulationConfig;
 import org.ironmaple.simulation.motorsims.SimulatedBattery;
 import org.ironmaple.simulation.motorsims.SimulatedMotorController;
+import org.littletonrobotics.junction.Logger;
 
+/**
+ * {@link DriveIO} class that implements the CTRE {@link SwerveDrivetrain} class, and makes it
+ * partially AdvantageKit compatible. This class utilizes the maple-sim {@link SwerveDriveSimulation} in order for more realistic simulation of the drivetrain.
+ */
 public class DriveIOMapleSim extends DriveIOReal {
-  private final Pigeon2SimState gyroSimState;
   private final SwerveDriveSimulation driveSim;
-  private Notifier simNotifier = null;
+  private final Pigeon2SimState gyroSimState;
+  private Notifier simNotifier;
 
   /**
    * Constructs a {@link DriveIOMapleSim} using the specified constants.
    *
    * <p>This constructs the underlying hardware devices, so users should not construct the devices
-   * themselves.
+   * themselves. Some of these simulation values can be grabbed through a PathPlanner {@link com.pathplanner.lib.config.RobotConfig} and {@link com.pathplanner.lib.config.ModuleConfig}, if you are utilizing PathPlanner.
+   *
+   * @param drivetrainConstants Drivetrain-wide constants for the swerve drive.
+   * @param odometryUpdateFrequency The frequency to run the odometry loop. If unspecified or set to
+   *     0 Hz, this is 250 Hz on CAN FD, and 100 Hz on CAN 2.0.
+   * @param odometryStandardDeviation The standard deviation for odometry calculation in the form
+   *     [x, y, theta]ᵀ, with units in meters and radians.
+   * @param visionStandardDeviation The standard deviation for vision calculation in the form [x, y,
+   *     theta]ᵀ, with units in meters and radians.
+   * @param robotMassWithBumpers The {@link Mass} of the robot on the competition field.
+   * @param bumperLengthX The length of the bumpers in the X direction.
+   * @param bumperWidthY The width of the bumpers in the Y direction.
+   * @param driveMotorModel The model of the drive motor on this simulated swerve module.
+   * @param steerMotorModel The model of the steer motor on this simulated swerve module.
+   * @param wheelCOF The COF (coefficient of friction) of the drive wheel. Look at {@link
+   *     org.ironmaple.simulation.drivesims.COTS.WHEELS} for some examples.
+   * @param modules Constants for each specific module
    */
   public DriveIOMapleSim(
       SwerveDrivetrainConstants drivetrainConstants,
       double odometryUpdateFrequency,
       Matrix<N3, N1> odometryStandardDeviation,
       Matrix<N3, N1> visionStandardDeviation,
-      MapleSimConfig simConfig,
+      Time simLoopPeriod,
+      Mass robotMassWithBumpers,
+      Distance bumperLengthX,
+      Distance bumperWidthY,
+      DCMotor driveMotorModel,
+      DCMotor steerMotorModel,
+      double wheelCOF,
       SwerveModuleConstants... modules) {
     super(
         drivetrainConstants,
@@ -71,24 +101,25 @@ public class DriveIOMapleSim extends DriveIOReal {
     this.gyroSimState = getPigeon2().getSimState();
     var drivetrainSimConfig =
         DriveTrainSimulationConfig.Default()
-            .withRobotMass(simConfig.robotMassWithBumpers())
-            .withBumperSize(simConfig.bumperLengthX(), simConfig.bumperWidthY())
+            .withRobotMass(robotMassWithBumpers)
+            .withBumperSize(bumperLengthX, bumperWidthY)
             .withCustomModuleTranslations(getModuleLocations())
             .withGyro(COTS.ofPigeon2())
             .withSwerveModule(
                 new SwerveModuleSimulationConfig(
-                    simConfig.driveMotorModel(),
-                    simConfig.steerMotorModel(),
+                    driveMotorModel,
+                    steerMotorModel,
                     modules[0].DriveMotorGearRatio,
                     modules[0].SteerMotorGearRatio,
                     Volts.of(modules[0].DriveFrictionVoltage),
                     Volts.of(modules[0].SteerFrictionVoltage),
                     Meters.of(modules[0].WheelRadius),
                     KilogramSquareMeters.of(modules[0].SteerInertia),
-                    simConfig.wheelCOF()));
+                    wheelCOF));
 
     driveSim = new SwerveDriveSimulation(drivetrainSimConfig, new Pose2d());
 
+    // Make sure all the modules use the Talon FX motor simulations
     SwerveModuleSimulation[] moduleSimulations = driveSim.getModules();
     for (int i = 0; i < moduleSimulations.length; i++) {
       var module = getModule(i);
@@ -97,14 +128,14 @@ public class DriveIOMapleSim extends DriveIOReal {
           new SimulatedTalonFXWithCANcoder(module.getSteerMotor(), module.getEncoder()));
     }
 
-    startSimThread();
+    startSimThread(simLoopPeriod);
   }
 
   /**
    * Start the simulation thread to update the simulation state of the {@link
    * SwerveDriveSimulation}.
    */
-  public void startSimThread() {
+  public void startSimThread(Time simLoopPeriod) {
     simNotifier =
         new Notifier(
             () -> {
@@ -116,7 +147,21 @@ public class DriveIOMapleSim extends DriveIOReal {
                       driveSim.getDriveTrainSimulatedChassisSpeedsRobotRelative()
                           .omegaRadiansPerSecond));
             });
-    simNotifier.startPeriodic(DriveConstants.simulationLoopPeriod);
+    simNotifier.startPeriodic(simLoopPeriod.in(Seconds));
+  }
+
+  /**
+   * Updates a {@link DriveIOInputs} instance with the latest updates from this {@link DriveIO}.
+   *
+   * @param inputs A {@link DriveIOInputs} instance to update.
+   */
+  @Override
+  public void updateInputs(DriveIOInputs inputs) {
+    // Update the inputs passed in with the current SwerveDriveState
+    inputs.fromSwerveDriveState(getState());
+
+    // Log the drivetrain pose to NetworkTables
+    Logger.recordOutput("Drive/SimulatedPose", driveSim.getSimulatedDriveTrainPose());
   }
 
   public static SwerveModuleConstants<
