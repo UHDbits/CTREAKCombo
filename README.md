@@ -3,7 +3,7 @@
 ![FRC 1165 - Team Paradise Banner](/images/banner.png)
 # CTREAKCombo
 
-WPILib 2025.2.1 code implementing the CTRE Swerve Library with AdvantageKit, alongside partial replay support. Also implementing maple-sim for higher-quality drivetrain simulation, alongside game piece simulation and drivetrain collision simulation.
+WPILib 2025.2.1 code implementing the CTRE Swerve Library with AdvantageKit, alongside partial replay support. Also implementing maple-sim for higher-quality drivetrain simulation, alongside game piece simulation and drivetrain collision simulation. Also includes PhotonVision support, both physically and in simulation.
 
 </div>
 
