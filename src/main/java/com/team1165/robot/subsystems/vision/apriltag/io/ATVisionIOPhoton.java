@@ -26,7 +26,7 @@ import org.photonvision.targeting.PhotonTrackedTarget;
  */
 public class ATVisionIOPhoton implements ATVisionIO {
   // Camera object and robot to camera translation
-  private final PhotonCamera camera;
+  protected final PhotonCamera camera;
   private final Transform3d robotToCamera;
 
   /**

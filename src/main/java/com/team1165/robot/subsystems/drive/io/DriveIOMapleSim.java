@@ -121,6 +121,34 @@ public class DriveIOMapleSim extends DriveIOReal {
     setupSimulation(simConfig, regulateModuleConstantsForSimulation(modules));
   }
 
+  public static SwerveModuleConstants<?, ?, ?>[] regulateModuleConstantsForSimulation(
+      SwerveModuleConstants<?, ?, ?>... moduleConstants) {
+    for (SwerveModuleConstants<?, ?, ?> moduleConstant : moduleConstants) {
+      // Apply simulation-specific adjustments to module constants
+      moduleConstant
+          // Disable encoder offsets
+          .withEncoderOffset(0)
+          // Disable motor inversions for drive and steer motors
+          .withDriveMotorInverted(false)
+          .withSteerMotorInverted(false)
+          // Disable CanCoder inversion
+          .withEncoderInverted(false)
+          // Adjust steer motor PID gains for simulation
+          .withSteerMotorGains(
+              moduleConstant
+                  .SteerMotorGains
+                  .withKP(70) // Proportional gain
+                  .withKD(4.5)) // Derivative gain
+          // Adjust friction voltages
+          .withDriveFrictionVoltage(Volts.of(0.1))
+          .withSteerFrictionVoltage(Volts.of(0.15))
+          // Adjust steer inertia
+          .withSteerInertia(KilogramSquareMeters.of(0.05));
+    }
+
+    return moduleConstants;
+  }
+
   private void setupSimulation(
       MapleSimConfig simConfig, SwerveModuleConstants<?, ?, ?>... modules) {
     this.gyroSimState = getPigeon2().getSimState();
@@ -189,37 +217,14 @@ public class DriveIOMapleSim extends DriveIOReal {
 
   @Override
   public void resetPose(Pose2d pose) {
+    // Reset the simulated pose as well as the odometry pose
     driveSim.setSimulationWorldPose(pose);
     Timer.delay(0.1);
     super.resetPose(pose);
   }
 
-  public static SwerveModuleConstants<?, ?, ?>[] regulateModuleConstantsForSimulation(
-      SwerveModuleConstants<?, ?, ?>... moduleConstants) {
-    for (SwerveModuleConstants<?, ?, ?> moduleConstant : moduleConstants) {
-      // Apply simulation-specific adjustments to module constants
-      moduleConstant
-          // Disable encoder offsets
-          .withEncoderOffset(0)
-          // Disable motor inversions for drive and steer motors
-          .withDriveMotorInverted(false)
-          .withSteerMotorInverted(false)
-          // Disable CanCoder inversion
-          .withEncoderInverted(false)
-          // Adjust steer motor PID gains for simulation
-          .withSteerMotorGains(
-              moduleConstant
-                  .SteerMotorGains
-                  .withKP(70) // Proportional gain
-                  .withKD(4.5)) // Derivative gain
-          // Adjust friction voltages
-          .withDriveFrictionVoltage(Volts.of(0.1))
-          .withSteerFrictionVoltage(Volts.of(0.15))
-          // Adjust steer inertia
-          .withSteerInertia(KilogramSquareMeters.of(0.05));
-    }
-
-    return moduleConstants;
+  public Pose2d getSimulationPose() {
+    return driveSim.getSimulatedDriveTrainPose();
   }
 
   /**

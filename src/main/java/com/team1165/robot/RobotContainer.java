@@ -22,6 +22,9 @@ import com.team1165.robot.subsystems.drive.io.DriveIO;
 import com.team1165.robot.subsystems.drive.io.DriveIOMapleSim;
 import com.team1165.robot.subsystems.drive.io.DriveIOMapleSim.MapleSimConfig;
 import com.team1165.robot.subsystems.drive.io.DriveIOReal;
+import com.team1165.robot.subsystems.vision.apriltag.ATVision;
+import com.team1165.robot.subsystems.vision.apriltag.io.ATVisionIOPhotonSim;
+import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 
@@ -34,6 +37,7 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 public class RobotContainer {
   // Subsystems
   private final Drive drive;
+  private final ATVision apriltagVision;
 
   // Driver Controllers
   private final CommandXboxController driverController = new CommandXboxController(0);
@@ -60,6 +64,10 @@ public class RobotContainer {
                     TunerConstants.FrontRight,
                     TunerConstants.BackLeft,
                     TunerConstants.BackRight));
+        apriltagVision =
+            new ATVision(
+                drive::addVisionMeasurement,
+                new ATVisionIOPhotonSim("test", new Transform3d(), drive::getSimulationPose));
         break;
 
       case SIM:
@@ -80,11 +88,19 @@ public class RobotContainer {
                     TunerConstants.FrontRight,
                     TunerConstants.BackLeft,
                     TunerConstants.BackRight));
+        apriltagVision =
+            new ATVision(
+                drive::addVisionMeasurement,
+                new ATVisionIOPhotonSim("test", new Transform3d(), drive::getSimulationPose));
         break;
 
       default:
         // Replayed robot, disable IO implementations
         drive = new Drive(new DriveIO() {});
+        apriltagVision =
+            new ATVision(
+                drive::addVisionMeasurement,
+                new ATVisionIOPhotonSim("test", new Transform3d(), drive::getSimulationPose));
         break;
     }
 

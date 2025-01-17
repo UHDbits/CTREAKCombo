@@ -13,6 +13,7 @@ import com.ctre.phoenix6.swerve.SwerveDrivetrain.SwerveDriveState;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.team1165.robot.subsystems.drive.io.DriveIO;
 import com.team1165.robot.subsystems.drive.io.DriveIO.DriveIOInputs;
+import com.team1165.robot.subsystems.drive.io.DriveIOMapleSim;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -232,7 +233,7 @@ public class Drive extends SubsystemBase {
       Pose2d visionRobotPoseMeters,
       double timestampSeconds,
       Matrix<N3, N1> visionMeasurementStdDevs) {
-    io.addVisionMeasurement(visionRobotPoseMeters, timestampSeconds, visionMeasurementStdDevs);
+    io.addVisionMeasurement(visionRobotPoseMeters, timestampSeconds);
   }
 
   /**
@@ -255,6 +256,14 @@ public class Drive extends SubsystemBase {
    */
   public Pose2d getPose() {
     return inputs.Pose;
+  }
+
+  public Pose2d getSimulationPose() {
+    if (io.getClass() == DriveIOMapleSim.class) {
+      return ((DriveIOMapleSim) io).getSimulationPose();
+    } else {
+      return inputs.Pose;
+    }
   }
 
   /**
