@@ -12,10 +12,10 @@ package com.team1165.robot.subsystems.vision.apriltag.io;
 import com.team1165.robot.subsystems.vision.apriltag.constants.ATVisionConstants;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Transform3d;
+import java.util.ArrayDeque;
 import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Optional;
+import java.util.Queue;
 import java.util.Set;
 import org.photonvision.PhotonCamera;
 import org.photonvision.targeting.PhotonTrackedTarget;
@@ -53,7 +53,7 @@ public class ATVisionIOPhoton implements ATVisionIO {
 
     // Save tag IDs and pose observations to add to inputs later
     Set<Short> tagIds = new HashSet<>();
-    List<PoseObservation> poseObservations = new LinkedList<>();
+    Queue<PoseObservation> poseObservations = new ArrayDeque<>(5);
 
     // Read new camera observations
     for (var result : camera.getAllUnreadResults()) {
@@ -113,10 +113,7 @@ public class ATVisionIOPhoton implements ATVisionIO {
     }
 
     // Save pose observations to inputs object
-    inputs.poseObservations = new PoseObservation[poseObservations.size()];
-    for (int i = 0; i < poseObservations.size(); i++) {
-      inputs.poseObservations[i] = poseObservations.get(i);
-    }
+    inputs.poseObservations = poseObservations.toArray(PoseObservation[]::new);
 
     // Save tag IDs to inputs object
     inputs.tagIds = new int[tagIds.size()];

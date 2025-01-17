@@ -24,7 +24,7 @@ import org.photonvision.simulation.VisionSystemSim;
  */
 public class ATVisionIOPhotonSim extends ATVisionIOPhoton {
   // Vision simulation environment with all targets and cameras
-  private static VisionSystemSim visionSim;
+  private static final VisionSystemSim visionSim = new VisionSystemSim("apriltag");
 
   private final Supplier<Pose2d> poseSupplier;
   private final PhotonCameraSim cameraSim;
@@ -42,8 +42,7 @@ public class ATVisionIOPhotonSim extends ATVisionIOPhoton {
     this.poseSupplier = poseSupplier;
 
     // Initialize vision sim
-    if (visionSim == null) {
-      visionSim = new VisionSystemSim("main");
+    if (visionSim.getVisionTargets().isEmpty()) {
       visionSim.addAprilTags(aprilTagLayout);
     }
 
