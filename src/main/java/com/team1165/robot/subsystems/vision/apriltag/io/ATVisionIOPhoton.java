@@ -30,7 +30,7 @@ public class ATVisionIOPhoton implements ATVisionIO {
   private final Transform3d robotToCamera;
 
   /**
-   * Creates a new {@link ATVisionIOPhoton} with the specified constants.
+   * Creates a new {@link ATVisionIOPhoton} with the provided values.
    *
    * @param name The configured name of the camera.
    * @param robotToCamera The 3D position of the camera relative to the robot.
@@ -38,6 +38,15 @@ public class ATVisionIOPhoton implements ATVisionIO {
   public ATVisionIOPhoton(String name, Transform3d robotToCamera) {
     camera = new PhotonCamera(name);
     this.robotToCamera = robotToCamera;
+  }
+
+  /**
+   * Creates a new {@link ATVisionIOPhoton} with the provided configuration.
+   *
+   * @param photonConfig The {@link ATVisionIOPhotonConfig} with the configuration for this camera.
+   */
+  public ATVisionIOPhoton(ATVisionIOPhotonConfig photonConfig) {
+    this(photonConfig.name(), photonConfig.robotToCamera());
   }
 
   /**
@@ -122,4 +131,12 @@ public class ATVisionIOPhoton implements ATVisionIO {
       inputs.tagIds[i++] = id;
     }
   }
+
+  /**
+   * A configuration class used to provide values needed to create an {@link ATVisionIOPhoton}.
+   *
+   * @param name The configured name of the camera.
+   * @param robotToCamera The 3D position of the camera relative to the robot.
+   */
+  public record ATVisionIOPhotonConfig(String name, Transform3d robotToCamera) {}
 }
