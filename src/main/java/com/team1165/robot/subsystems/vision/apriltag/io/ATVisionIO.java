@@ -34,8 +34,8 @@ public interface ATVisionIO {
     /** Name of the camera, if it has one. */
     public String name = "N/A";
 
-    /** Pose observations gathered since the last time the input was updated. */
-    public PoseObservation[] poseObservations = new PoseObservation[0];
+    /** Camera pose observations gathered since the last time the input was updated. */
+    public CameraPoseObservation[] poseObservations = new CameraPoseObservation[0];
 
     /**
      * The AprilTag IDs that have been visible at least once since the last time the input was
@@ -45,14 +45,17 @@ public interface ATVisionIO {
   }
 
   /**
-   * Represents a robot pose sample provided by a camera used for pose estimation.
+   * Represents the pose observation from a AprilTag camera, found with multiple tags.
    *
    * @param timestamp The synced timestamp of the pose observation.
-   * @param pose The pose observation itself.
+   * @param cameraPose The pose observation itself. Note, this is only the camera 
    * @param ambiguity The measure of how "ambiguous" (unsure/unclear) the pose observation is.
    * @param tagCount The number of AprilTags used to make this pose observation.
    * @param averageTagDistance The average distance of the AprilTags observed from the camera.
    */
-  record PoseObservation(
-      double timestamp, Pose3d pose, double ambiguity, int tagCount, double averageTagDistance) {}
+  record CameraPoseObservation(
+      double timestamp, Pose3d cameraPose, double ambiguity, int tagCount, double averageTagDistance) {}
+
+  record SingleTagObservation(
+    double timestamp, double tx, double ty, double distance) {}
 }
