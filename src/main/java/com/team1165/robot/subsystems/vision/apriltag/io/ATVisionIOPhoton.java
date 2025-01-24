@@ -10,17 +10,13 @@ package com.team1165.robot.subsystems.vision.apriltag.io;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Rotation3d;
-import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.numbers.N3;
 import java.util.ArrayDeque;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import org.photonvision.PhotonCamera;
-import org.photonvision.PhotonPoseEstimator;
 import org.photonvision.targeting.MultiTargetPNPResult;
 import org.photonvision.targeting.PhotonTrackedTarget;
 import org.photonvision.targeting.TargetCorner;
@@ -30,9 +26,9 @@ import org.photonvision.targeting.TargetCorner;
  * coprocessor running PhotonVision.
  */
 public class ATVisionIOPhoton implements ATVisionIO {
-  // Camera object
+  // Camera and camera intrinsics objects
   protected final PhotonCamera camera;
-  private Optional<Matrix<N3, N3>> cameraMatrix;
+  private Matrix<N3, N3> camIntrinsics;
 
   /**
    * Creates a new {@link ATVisionIOPhoton} with the provided name.
@@ -41,6 +37,7 @@ public class ATVisionIOPhoton implements ATVisionIO {
    */
   public ATVisionIOPhoton(String name) {
     camera = new PhotonCamera(name);
+    camIntrinsics = camera.getCameraMatrix().orElse(null);
   }
 
   /**
@@ -57,7 +54,7 @@ public class ATVisionIOPhoton implements ATVisionIO {
     // Make sure the name of the camera is saved to inputs
     inputs.name = camera.getName();
 
-    // Save tag IDs and pose observations to add to inputs later
+    // Save tag IDs and pose/single-tag observations to add to inputs later
     Set<Short> tagIds = new HashSet<>();
     Queue<CameraPoseObservation> poseObservations = new ArrayDeque<>(5);
     Queue<SingleTagObservation> singleTagObservations = new ArrayDeque<>(5);
@@ -101,44 +98,44 @@ public class ATVisionIOPhoton implements ATVisionIO {
           sumY += corner.y;
         }
 
-        // Update camera matrix if it doesn't exist
-        if (cameraMatrix.isEmpty()) {
-          cameraMatrix = camera.getCameraMatrix();
-        }
-
-        if (cameraMatrix.isPresent()) {
-          Matrix<N3, N3> camIntrinsics = cameraMatrix.get();
-
+        // If camera intrinsics do exist, continue
+        if (camIntrinsics != null) {
           double fx = camIntrinsics.get(0, 0);
           double cx = camIntrinsics.get(0, 2);
-          double yawOffset = cx - x;
+          double yawOffset = cx - sumX / 4;
 
           double fy = camIntrinsics.get(1, 1);
           double cy = camIntrinsics.get(1, 2);
-          double yOffset = cy - y;
+          double pitchOffset = cy - sumY / 4;
 
           // Calculate the yaw (horizontal angle, x value)
           var yaw = new Rotation2d(fx, yawOffset);
-          // Calculate the pitch with the new yaw value
-          var pitch = new Rotation2d(fy / Math.cos(Math.atan(yawOffset / fx)), -yOffset);
+          // Calculate the pitch (vertical angle, y value) with the new yaw value
+          var pitch = new Rotation2d(fy / Math.cos(Math.atan(yawOffset / fx)), -pitchOffset);
+
+          // Add tag ID
+          tagIds.add((short) tag.fiducialId);
+
+          // Add single tag observation
+          singleTagObservations.add(
+              new SingleTagObservation(
+                  yaw.getRadians(), // Yaw (horizontal angle, x value)
+                  pitch.getRadians(), // Pitch (vertical angle, y value)
+                  tag.fiducialId, // Tag ID
+                  tag.bestCameraToTarget.getTranslation().getNorm(), // Tag distance
+                  result.getTimestampSeconds())); // Timestamp
+        } else {
+          // Update camera matrix if it doesn't exist
+          camIntrinsics = camera.getCameraMatrix().orElse(null);
         }
-
-        // Add tag ID
-        tagIds.add((short) tag.fiducialId);
-
-        // Add single tag observation
-        singleTagObservations.add(
-            new SingleTagObservation(
-                result.getTimestampSeconds(), // Timestamp
-                robotPose, // 3D pose estimate
-                tag.poseAmbiguity, // Ambiguity
-                tag.bestCameraToTarget.getTranslation().getNorm(), // Tag distance
-                result.getTimestampSeconds()));
       }
     }
 
     // Save pose observations to inputs object
-    inputs.poseObservations = poseObservations.toArray(PoseObservation[]::new);
+    inputs.poseObservations = poseObservations.toArray(CameraPoseObservation[]::new);
+
+    // Save single tag pose
+    inputs.singleTagObservations = singleTagObservations.toArray(SingleTagObservation[]::new);
 
     // Save tag IDs to inputs object
     inputs.tagIds = new int[tagIds.size()];

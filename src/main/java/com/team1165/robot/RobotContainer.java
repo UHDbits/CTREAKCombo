@@ -95,7 +95,7 @@ public class RobotContainer {
                 drive::addVisionMeasurement,
                 new ATVisionIOPhotonSim(
                     new ATVisionIOPhotonConfig("test", new Transform3d()),
-                    new ATVisionIOPhotonSimConfig(960, 720)
+                    new ATVisionIOPhotonSimConfig(960, 720, new Transform3d())
                         .withCalibError(1, 0.1)
                         .withLatency(0, 0)
                         .withFPS(150),
