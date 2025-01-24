@@ -1,6 +1,4 @@
 /*
- * File originally made by: Mechanical Advantage - FRC 6328
- * Copyright (c) 2025 Team 6328 (https://github.com/Mechanical-Advantage)
  * Copyright (c) 2025 Team Paradise - FRC 1165 (https://github.com/TeamParadise)
  *
  * Use of this source code is governed by the MIT License, which can be found in the LICENSE file at
@@ -18,6 +16,7 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import org.photonvision.PhotonCamera;
+import org.photonvision.targeting.MultiTargetPNPResult;
 import org.photonvision.targeting.PhotonTrackedTarget;
 
 /**
@@ -25,28 +24,16 @@ import org.photonvision.targeting.PhotonTrackedTarget;
  * coprocessor running PhotonVision.
  */
 public class ATVisionIOPhoton implements ATVisionIO {
-  // Camera object and robot to camera translation
+  // Camera object
   protected final PhotonCamera camera;
-  private final Transform3d robotToCamera;
 
   /**
-   * Creates a new {@link ATVisionIOPhoton} with the provided values.
+   * Creates a new {@link ATVisionIOPhoton} with the provided name.
    *
    * @param name The configured name of the camera.
-   * @param robotToCamera The 3D position of the camera relative to the robot.
    */
-  public ATVisionIOPhoton(String name, Transform3d robotToCamera) {
+  public ATVisionIOPhoton(String name) {
     camera = new PhotonCamera(name);
-    this.robotToCamera = robotToCamera;
-  }
-
-  /**
-   * Creates a new {@link ATVisionIOPhoton} with the provided configuration.
-   *
-   * @param photonConfig The {@link ATVisionIOPhotonConfig} with the configuration for this camera.
-   */
-  public ATVisionIOPhoton(ATVisionIOPhotonConfig photonConfig) {
-    this(photonConfig.name(), photonConfig.robotToCamera());
   }
 
   /**
@@ -65,23 +52,34 @@ public class ATVisionIOPhoton implements ATVisionIO {
 
     // Save tag IDs and pose observations to add to inputs later
     Set<Short> tagIds = new HashSet<>();
-    Queue<PoseObservation> poseObservations = new ArrayDeque<>(5);
+    Queue<CameraPoseObservation> poseObservations = new ArrayDeque<>(5);
 
     // Read new camera observations
     for (var result : camera.getAllUnreadResults()) {
       // Use MultiTag instead of single tag, if possible
       if (result.multitagResult.isPresent()) {
         // Get latest MultiTag result
-        var multitagResult = result.multitagResult.get();
+        MultiTargetPNPResult multitagResult = result.multitagResult.get();
+
+        // Calculate average tag distance
+        double totalTagDistance = 0.0;
+        for (var tag : result.targets) {
+          totalTagDistance += tag.bestCameraToTarget.getTranslation().getNorm();
+        }
+
+        // Add tag IDs
+        tagIds.addAll(multitagResult.fiducialIDsUsed);
 
         // Add pose observation
         poseObservations.add(
-            new PoseObservation(
-                result.getTimestampSeconds(), // Timestamp
-                multitagResult.estimatedPose, // 3D pose estimate
+            new CameraPoseObservation(
+                new Pose3d(
+                    multitagResult.estimatedPose.best.getTranslation(),
+                    multitagResult.estimatedPose.best.getRotation()), // 3D pose estimate
                 multitagResult.estimatedPose.ambiguity, // Ambiguity
                 multitagResult.fiducialIDsUsed.size(), // Tag count
-                totalTagDistance / result.targets.size())); // Average tag distance
+                totalTagDistance / result.targets.size(), // Average tag distance
+                result.getTimestampSeconds())); // Timestamp
       } else if (!result.targets.isEmpty()) { // Check and see if there are any targets at all
         // Do a single tag calculation instead, get the tag and it's field pose
         PhotonTrackedTarget tag = result.targets.get(0);
@@ -121,12 +119,4 @@ public class ATVisionIOPhoton implements ATVisionIO {
       inputs.tagIds[i++] = id;
     }
   }
-
-  /**
-   * A configuration class used to provide values needed to create an {@link ATVisionIOPhoton}.
-   *
-   * @param name The configured name of the camera.
-   * @param robotToCamera The 3D position of the camera relative to the robot.
-   */
-  public record ATVisionIOPhotonConfig(String name, Transform3d robotToCamera) {}
 }

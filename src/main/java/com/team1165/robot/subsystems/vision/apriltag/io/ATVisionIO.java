@@ -1,6 +1,4 @@
 /*
- * File originally made by: Mechanical Advantage - FRC 6328
- * Copyright (c) 2025 Team 6328 (https://github.com/Mechanical-Advantage)
  * Copyright (c) 2025 Team Paradise - FRC 1165 (https://github.com/TeamParadise)
  *
  * Use of this source code is governed by the MIT License, which can be found in the LICENSE file at
@@ -31,11 +29,14 @@ public interface ATVisionIO {
     /** Value that represents if the camera is currently connected or not. */
     public boolean connected = false;
 
-    /** Name of the camera, if it has one. */
+    /** The name of the camera, if it has one. Default is "N/A". */
     public String name = "N/A";
 
     /** Camera pose observations gathered since the last time the input was updated. */
     public CameraPoseObservation[] poseObservations = new CameraPoseObservation[0];
+
+    /** Single tag observations gathered since the last time the input was updated. */
+    public SingleTagObservation[] singleTagObservations = new SingleTagObservation[0];
 
     /**
      * The AprilTag IDs that have been visible at least once since the last time the input was
@@ -45,17 +46,31 @@ public interface ATVisionIO {
   }
 
   /**
-   * Represents the pose observation from a AprilTag camera, found with multiple tags.
+   * Represents the pose observation from a AprilTag camera processed on the coprocessor.
    *
-   * @param timestamp The synced timestamp of the pose observation.
-   * @param cameraPose The pose observation itself. Note, this is only the camera 
+   * @param cameraPose The pose observation itself. Note, this is the pose of the camera, not the
+   *     robot.
+   * @param averageTagDistance The average distance of the AprilTags observed from the camera.
    * @param ambiguity The measure of how "ambiguous" (unsure/unclear) the pose observation is.
    * @param tagCount The number of AprilTags used to make this pose observation.
-   * @param averageTagDistance The average distance of the AprilTags observed from the camera.
+   * @param timestamp The synced timestamp of the pose observation.
    */
   record CameraPoseObservation(
-      double timestamp, Pose3d cameraPose, double ambiguity, int tagCount, double averageTagDistance) {}
+      Pose3d cameraPose,
+      double averageTagDistance,
+      double ambiguity,
+      int tagCount,
+      double timestamp) {}
 
-  record SingleTagObservation(
-    double timestamp, double tx, double ty, double distance) {}
+  /**
+   * Represents a single tag observation from a AprilTag camera, processed alongside the IMU
+   * rotation of the robot to find the robot pose.
+   *
+   * @param tx The horizontal (yaw) rotation of the tag from the camera.
+   * @param ty The vertical (pitch) rotation of the tag from the camera.
+   * @param tagId The AprilTag ID observed in this observation.
+   * @param distance The 3D distance of the tag from the camera.
+   * @param timestamp The synced timestamp of the pose observation.
+   */
+  record SingleTagObservation(double tx, double ty, int tagId, double distance, double timestamp) {}
 }
