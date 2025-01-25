@@ -18,6 +18,12 @@ import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.math.geometry.Transform2d;
+import edu.wpi.first.math.geometry.Transform3d;
+import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.Alert;
@@ -25,6 +31,7 @@ import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import java.util.ArrayDeque;
 import java.util.Queue;
+import java.util.function.Supplier;
 import org.littletonrobotics.junction.Logger;
 
 /**
@@ -37,10 +44,16 @@ public class ATVision extends SubsystemBase {
   private final Alert[] disconnectedAlerts;
   private final ATVisionIO[] io;
   private final ATVisionIOInputsAutoLogged[] inputs;
+  private final Transform3d[] robotToCameraTransforms = new Transform3d[1];
+  private final Supplier<Rotation2d> robotRotationSupplier;
 
-  public ATVision(ATVisionConsumer consumer, ATVisionIO... io) {
+  public ATVision(
+      ATVisionConsumer consumer, Supplier<Rotation2d> robotRotationSupplier, ATVisionIO... io) {
     this.consumer = consumer;
     this.io = io;
+    this.robotRotationSupplier = robotRotationSupplier;
+    robotToCameraTransforms[0] =
+        new Transform3d(new Translation3d(0, 0, 0), new Rotation3d(0.0, 0.0, 0));
 
     // Initialize inputs
     this.inputs = new ATVisionIOInputsAutoLogged[io.length];
@@ -62,9 +75,10 @@ public class ATVision extends SubsystemBase {
 
   @Override
   public void periodic() {
+    // Update current inputs and log
     for (int i = 0; i < io.length; i++) {
       io[i].updateInputs(inputs[i]);
-      Logger.processInputs("AprilTagVision/Camera" + Integer.toString(i), inputs[i]);
+      Logger.processInputs("AprilTagVision/Camera" + i, inputs[i]);
     }
 
     // Initialize values to be logged from all cameras
@@ -91,27 +105,28 @@ public class ATVision extends SubsystemBase {
       }
 
       // Loop over pose observations
-      for (var observation : inputs[cameraIndex].poseObservations) {
+      for (var poseObservation : inputs[cameraIndex].poseObservations) {
+        // Calculate robot pose from the camera pose provided
+        Pose3d robotPose =
+            poseObservation.cameraPose().plus(robotToCameraTransforms[cameraIndex].inverse());
+
         // Check whether to reject pose
         boolean rejectPose =
-            observation.tagCount() == 0 // Must have at least one tag
-                || (observation.tagCount() == 1
-                    && observation.ambiguity() > maxAmbiguity) // Cannot be high ambiguity
-                || Math.abs(observation.pose().getZ())
-                    > maxZError // Must have realistic Z coordinate
-
+            (poseObservation.tagCount() == 1
+                    && poseObservation.ambiguity() > maxAmbiguity) // Cannot be high ambiguity
+                || Math.abs(robotPose.getZ()) > maxZError // Must have realistic Z coordinate
                 // Must be within the field boundaries
-                || observation.pose().getX() < 0.0
-                || observation.pose().getX() > aprilTagLayout.getFieldLength()
-                || observation.pose().getY() < 0.0
-                || observation.pose().getY() > aprilTagLayout.getFieldWidth();
+                || robotPose.getX() < 0.0
+                || robotPose.getX() > aprilTagLayout.getFieldLength()
+                || robotPose.getY() < 0.0
+                || robotPose.getY() > aprilTagLayout.getFieldWidth();
 
         // Add pose to log
-        robotPoses.add(observation.pose());
+        robotPoses.add(robotPose);
         if (rejectPose) {
-          robotPosesRejected.add(observation.pose());
+          robotPosesRejected.add(robotPose);
         } else {
-          robotPosesAccepted.add(observation.pose());
+          robotPosesAccepted.add(robotPose);
         }
 
         // Skip if rejected
@@ -121,7 +136,7 @@ public class ATVision extends SubsystemBase {
 
         // Calculate standard deviations
         double stdDevFactor =
-            Math.pow(observation.averageTagDistance(), 2.0) / observation.tagCount();
+            Math.pow(poseObservation.averageTagDistance(), 2.0) / poseObservation.tagCount();
         double linearStdDev = linearStdDevBaseline * stdDevFactor;
         double angularStdDev = angularStdDevBaseline * stdDevFactor;
         if (cameraIndex < cameraStdDevFactors.length) {
@@ -131,7 +146,72 @@ public class ATVision extends SubsystemBase {
 
         // Send vision observation
         consumer.accept(
-            observation.pose().toPose2d(),
+            robotPose.toPose2d(),
+            Utils.fpgaToCurrentTime(poseObservation.timestamp()),
+            VecBuilder.fill(linearStdDev, linearStdDev, angularStdDev));
+      }
+
+      // Loop over single tag observations
+      for (var observation : inputs[cameraIndex].singleTagObservations) {
+        // Get the robot to camera transform/offset
+        Transform3d robotToCamera = robotToCameraTransforms[cameraIndex];
+
+        // Get the 2D distance from the camera to the tag
+        double distance2d =
+            observation.distance()
+                * Math.cos(robotToCamera.getRotation().getY() + observation.ty());
+
+        // Get the rotation of the tag from the camera position
+        Rotation2d camToTagRotation =
+            robotRotationSupplier
+                .get()
+                .plus(
+                    robotToCamera
+                        .getRotation()
+                        .toRotation2d()
+                        .plus(Rotation2d.fromRadians(observation.tx())));
+        Logger.recordOutput(
+            "Vision/Testing", robotToCamera.getRotation().toRotation2d().getRadians());
+
+        // Get the 2D tag pose from the AprilTag layout
+        var tagPose =
+            aprilTagLayout.getTagPose(observation.tagId()).map(Pose3d::toPose2d).orElse(null);
+        if (tagPose == null) {
+          break;
+        }
+
+        // Get the translation from the field to the camera
+        Translation2d fieldToCameraTranslation =
+            new Pose2d(tagPose.getTranslation(), camToTagRotation.plus(Rotation2d.kPi))
+                .transformBy(new Transform2d(distance2d, 0, new Rotation2d()))
+                .getTranslation();
+
+        // Get the robot pose with the translation
+        var cameraInverse = robotToCamera.inverse();
+        var robotPose =
+            new Pose2d(
+                    fieldToCameraTranslation,
+                    robotRotationSupplier.get().plus(robotToCamera.getRotation().toRotation2d()))
+                .transformBy(
+                    new Transform2d(
+                        new Pose2d(
+                            robotToCamera.getTranslation().toTranslation2d(),
+                            robotToCamera.getRotation().toRotation2d()),
+                        Pose2d.kZero));
+        robotPoses.add(new Pose3d(robotPose));
+
+        // Calculate standard deviations
+        double stdDevFactor = Math.pow(observation.distance(), 2.0);
+        double linearStdDev = linearStdDevBaseline * stdDevFactor;
+        double angularStdDev = angularStdDevBaseline * stdDevFactor;
+        if (cameraIndex < cameraStdDevFactors.length) {
+          linearStdDev *= cameraStdDevFactors[cameraIndex];
+          angularStdDev *= cameraStdDevFactors[cameraIndex];
+        }
+
+        // Send vision observation
+        consumer.accept(
+            robotPose,
             Utils.fpgaToCurrentTime(observation.timestamp()),
             VecBuilder.fill(linearStdDev, linearStdDev, angularStdDev));
       }

@@ -23,10 +23,11 @@ import com.team1165.robot.subsystems.drive.io.DriveIOMapleSim;
 import com.team1165.robot.subsystems.drive.io.DriveIOMapleSim.MapleSimConfig;
 import com.team1165.robot.subsystems.drive.io.DriveIOReal;
 import com.team1165.robot.subsystems.vision.apriltag.ATVision;
-import com.team1165.robot.subsystems.vision.apriltag.io.ATVisionIOPhoton.ATVisionIOPhotonConfig;
 import com.team1165.robot.subsystems.vision.apriltag.io.ATVisionIOPhotonSim;
 import com.team1165.robot.subsystems.vision.apriltag.io.ATVisionIOPhotonSim.ATVisionIOPhotonSimConfig;
+import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
+import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 
@@ -69,6 +70,7 @@ public class RobotContainer {
         apriltagVision =
             new ATVision(
                 drive::addVisionMeasurement,
+                () -> drive.getSimulationPose().getRotation(),
                 new ATVisionIOPhotonSim("test", new Transform3d(), drive::getSimulationPose));
         break;
 
@@ -93,10 +95,15 @@ public class RobotContainer {
         apriltagVision =
             new ATVision(
                 drive::addVisionMeasurement,
+                () -> drive.getSimulationPose().getRotation(),
                 new ATVisionIOPhotonSim(
-                    new ATVisionIOPhotonConfig("test", new Transform3d()),
-                    new ATVisionIOPhotonSimConfig(960, 720, new Transform3d())
-                        .withCalibError(1, 0.1)
+                    "test",
+                    new ATVisionIOPhotonSimConfig(
+                            960,
+                            720,
+                            new Transform3d(
+                                new Translation3d(0, 0, 0), new Rotation3d(0, 0.0, 0.0)))
+                        .withCalibError(0.15, 0.1)
                         .withLatency(0, 0)
                         .withFPS(150),
                     drive::getSimulationPose));
@@ -108,6 +115,7 @@ public class RobotContainer {
         apriltagVision =
             new ATVision(
                 drive::addVisionMeasurement,
+                () -> drive.getSimulationPose().getRotation(),
                 new ATVisionIOPhotonSim("test", new Transform3d(), drive::getSimulationPose));
         break;
     }
