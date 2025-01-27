@@ -19,11 +19,9 @@ import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.Alert;
@@ -31,7 +29,6 @@ import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import java.util.ArrayDeque;
 import java.util.Queue;
-import java.util.function.Supplier;
 import org.littletonrobotics.junction.Logger;
 
 /**
@@ -39,48 +36,56 @@ import org.littletonrobotics.junction.Logger;
  * placed around the field.
  */
 public class ATVision extends SubsystemBase {
-  // IO
-  private final ATVisionConsumer consumer;
+  // Alerts to send for each of the cameras if they get disconnected
   private final Alert[] disconnectedAlerts;
+
+  // General IO classes and inputs
   private final ATVisionIO[] io;
   private final ATVisionIOInputsAutoLogged[] inputs;
-  private final Transform3d[] robotToCameraTransforms = new Transform3d[1];
-  private final Supplier<Rotation2d> robotRotationSupplier;
+  private final Transform3d[] cameraTransforms;
 
+  // Consumer of the vision pose, supplier of the robot rotation
+  private final ATVisionConsumer globalConsumer;
+  private final ATVisionRotationSupplier rotationSupplier;
+
+  /**
+   * Creates a new {@link ATVision} with the provided values.
+   *
+   * @param globalConsumer The pose estimation consumer that all cameras of this subsystem contribute to.
+   * @param robotRotationSupplier The supplier of the robot rotation. Must be able to take in a timestamp for latency compensation.
+   * @param config The configurations of all the cameras of this subsystem.
+   */
   public ATVision(
-      ATVisionConsumer consumer, Supplier<Rotation2d> robotRotationSupplier, ATVisionIO... io) {
-    this.consumer = consumer;
-    this.io = io;
-    this.robotRotationSupplier = robotRotationSupplier;
-    robotToCameraTransforms[0] =
-        new Transform3d(new Translation3d(0, 0, 0), new Rotation3d(0.0, 0.0, 0));
+      ATVisionConsumer globalConsumer, ATVisionRotationSupplier robotRotationSupplier, CameraConfig... config) {
+    // Initialize consumer and supplier
+    this.globalConsumer = globalConsumer;
+    rotationSupplier = robotRotationSupplier;
 
-    // Initialize inputs
-    this.inputs = new ATVisionIOInputsAutoLogged[io.length];
-    for (int i = 0; i < inputs.length; i++) {
+    // Initialize all arrays for each camera
+    disconnectedAlerts = new Alert[config.length];
+    io = new ATVisionIO[config.length];
+    inputs = new ATVisionIOInputsAutoLogged[config.length];
+    cameraTransforms = new Transform3d[config.length];
+    for (int i = 0; i < config.length; i++) {
+      // Initialize IO and IO inputs
+      io[i] = config[i].io();
       inputs[i] = new ATVisionIOInputsAutoLogged();
       // Update inputs once so that we can get the name value from the cameras
       io[i].updateInputs(inputs[i]);
-    }
 
-    // Initialize alerts for if a camera is disconnected
-    this.disconnectedAlerts = new Alert[io.length];
-    for (int i = 0; i < io.length; i++) {
+      // Add robot to camera transform to array
+      cameraTransforms[i] = config[i].robotToCamera();
+
+      // Create the alert that will be sent if the camera is disconnected
       disconnectedAlerts[i] =
           new Alert(
-              "The AprilTag camera " + inputs[i].name + " (ID " + i + ") is disconnected.",
+              "The AprilTag camera \"" + inputs[i].name + "\" (ID " + i + ") is disconnected.",
               AlertType.kWarning);
     }
   }
 
   @Override
   public void periodic() {
-    // Update current inputs and log inputs
-    for (int i = 0; i < io.length; i++) {
-      io[i].updateInputs(inputs[i]);
-      Logger.processInputs("AprilTagVision/Camera" + i, inputs[i]);
-    }
-
     // Initialize values to be logged from all cameras
     Queue<Pose3d> allTagPoses = new ArrayDeque<>();
     Queue<Pose3d> allRobotPoses = new ArrayDeque<>();
@@ -89,7 +94,11 @@ public class ATVision extends SubsystemBase {
 
     // Loop over cameras
     for (int cameraIndex = 0; cameraIndex < io.length; cameraIndex++) {
-      // Update disconnected alert
+      // Update current inputs and log the current inputs
+      io[cameraIndex].updateInputs(inputs[cameraIndex]);
+      Logger.processInputs("AprilTagVision/Camera" + cameraIndex, inputs[cameraIndex]);
+
+      // Update the disconnected alert
       disconnectedAlerts[cameraIndex].set(!inputs[cameraIndex].connected);
 
       // Initialize values to be logged from this camera
@@ -108,7 +117,7 @@ public class ATVision extends SubsystemBase {
       for (var poseObservation : inputs[cameraIndex].poseObservations) {
         // Calculate robot pose from the camera pose provided
         Pose3d robotPose =
-            poseObservation.cameraPose().plus(robotToCameraTransforms[cameraIndex].inverse());
+            poseObservation.bestCameraPose().plus(robotToCameraTransforms[cameraIndex].inverse());
 
         // Check whether to reject pose
         boolean rejectPose =
@@ -245,10 +254,18 @@ public class ATVision extends SubsystemBase {
   }
 
   @FunctionalInterface
-  public static interface ATVisionConsumer {
-    public void accept(
+  public interface ATVisionConsumer {
+    void accept(
         Pose2d visionRobotPoseMeters,
         double timestampSeconds,
         Matrix<N3, N1> visionMeasurementStdDevs);
   }
+
+  @FunctionalInterface
+  public interface ATVisionRotationSupplier {
+    Rotation2d getRotation(
+        double timestampSeconds);
+  }
+
+  public record CameraConfig(ATVisionIO io, Transform3d robotToCamera) {};
 }

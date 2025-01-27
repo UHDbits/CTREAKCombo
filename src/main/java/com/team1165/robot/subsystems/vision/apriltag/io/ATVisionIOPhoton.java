@@ -141,13 +141,11 @@ public class ATVisionIOPhoton implements ATVisionIO {
           if (tagPose.isPresent()) {
             // Calculate camera pose based on the tag pose
             Transform3d bestCameraToTarget = tag.bestCameraToTarget;
-            Pose3d bestCameraPose =
-                tagPose.get().plus(bestCameraToTarget.inverse());
+            Pose3d bestCameraPose = tagPose.get().plus(bestCameraToTarget.inverse());
 
             // Get alternative camera pose
             Transform3d alternateCameraToTarget = tag.altCameraToTarget;
-            Pose3d alternateCameraPose =
-                tagPose.get().plus(alternateCameraToTarget.inverse());
+            Pose3d alternateCameraPose = tagPose.get().plus(alternateCameraToTarget.inverse());
 
             // Add tag ID
             tagIds.add((short) tag.fiducialId);
