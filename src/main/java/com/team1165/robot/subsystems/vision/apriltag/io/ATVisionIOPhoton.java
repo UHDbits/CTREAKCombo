@@ -85,7 +85,7 @@ public class ATVisionIOPhoton implements ATVisionIO {
                 new Pose3d(
                     multitagResult.estimatedPose.best.getTranslation(),
                     multitagResult.estimatedPose.best.getRotation()), // 3D pose estimate
-                null, // MultiTag, no alternative pose
+                new Pose3d(), // MultiTag, no alternative pose
                 totalTagDistance / result.targets.size(), // Average tag distance
                 multitagResult.estimatedPose.ambiguity, // Ambiguity
                 multitagResult.fiducialIDsUsed.size(), // Tag count
@@ -184,6 +184,7 @@ public class ATVisionIOPhoton implements ATVisionIO {
    *
    * @param enable Boolean that represents whether to enable or disable Tx/Ty estimation.
    */
+  @Override
   public void setSingleTagTrig(boolean enable) {
     trigEnabled = enable;
   }

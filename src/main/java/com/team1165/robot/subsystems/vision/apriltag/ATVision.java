@@ -1,6 +1,4 @@
 /*
- * File originally made by: Mechanical Advantage - FRC 6328
- * Copyright (c) 2025 Team 6328 (https://github.com/Mechanical-Advantage)
  * Copyright (c) 2025 Team Paradise - FRC 1165 (https://github.com/TeamParadise)
  *
  * Use of this source code is governed by the MIT License, which can be found in the LICENSE file at
@@ -26,6 +24,7 @@ import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import java.util.ArrayDeque;
 import java.util.Queue;
@@ -51,12 +50,16 @@ public class ATVision extends SubsystemBase {
   /**
    * Creates a new {@link ATVision} with the provided values.
    *
-   * @param globalConsumer The pose estimation consumer that all cameras of this subsystem contribute to.
-   * @param robotRotationSupplier The supplier of the robot rotation. Must be able to take in a timestamp for latency compensation.
+   * @param globalConsumer The pose estimation consumer that all cameras of this subsystem
+   *     contribute to.
+   * @param robotRotationSupplier The supplier of the robot rotation. Must be able to take in a
+   *     timestamp for latency compensation.
    * @param config The configurations of all the cameras of this subsystem.
    */
   public ATVision(
-      ATVisionConsumer globalConsumer, ATVisionRotationSupplier robotRotationSupplier, CameraConfig... config) {
+      ATVisionConsumer globalConsumer,
+      ATVisionRotationSupplier robotRotationSupplier,
+      CameraConfig... config) {
     // Initialize consumer and supplier
     this.globalConsumer = globalConsumer;
     rotationSupplier = robotRotationSupplier;
@@ -75,6 +78,12 @@ public class ATVision extends SubsystemBase {
 
       // Add robot to camera transform to array
       cameraTransforms[i] = config[i].robotToCamera();
+
+      // Activate single-tag trig if the camera orientation supports it
+      if (cameraTransforms[i].getRotation().getY() == 0
+          && cameraTransforms[i].getRotation().getX() == 0) {
+        io[i].setSingleTagTrig(true);
+      }
 
       // Create the alert that will be sent if the camera is disconnected
       disconnectedAlerts[i] =
@@ -107,7 +116,7 @@ public class ATVision extends SubsystemBase {
       Queue<Pose3d> robotPosesAccepted = new ArrayDeque<>();
       Queue<Pose3d> robotPosesRejected = new ArrayDeque<>();
 
-      // Add tag poses
+      // Add visible tag poses
       for (int tagId : inputs[cameraIndex].tagIds) {
         var tagPose = aprilTagLayout.getTagPose(tagId);
         tagPose.ifPresent(tagPoses::add);
@@ -115,55 +124,112 @@ public class ATVision extends SubsystemBase {
 
       // Loop over pose observations
       for (var poseObservation : inputs[cameraIndex].poseObservations) {
-        // Calculate robot pose from the camera pose provided
-        Pose3d robotPose =
-            poseObservation.bestCameraPose().plus(robotToCameraTransforms[cameraIndex].inverse());
+        if (poseObservation.tagCount() > 1) { // MultiTag
+          // Calculate robot pose from the camera pose provided
+          Pose3d robotPose =
+              poseObservation.bestCameraPose().plus(cameraTransforms[cameraIndex].inverse());
 
-        // Check whether to reject pose
-        boolean rejectPose =
-            (poseObservation.tagCount() == 1
-                    && poseObservation.ambiguity() > maxAmbiguity) // Cannot be high ambiguity
-                || Math.abs(robotPose.getZ()) > maxZError // Must have realistic Z coordinate
-                // Must be within the field boundaries
-                || robotPose.getX() < 0.0
-                || robotPose.getX() > aprilTagLayout.getFieldLength()
-                || robotPose.getY() < 0.0
-                || robotPose.getY() > aprilTagLayout.getFieldWidth();
+          // Check whether to reject pose
+          boolean rejectPose =
+              Math.abs(robotPose.getZ()) > maxZError // Must have realistic Z coordinate
+                  // Must be within the field boundaries
+                  || robotPose.getX() < -fieldBorderMargin
+                  || robotPose.getX() > aprilTagLayout.getFieldLength() + fieldBorderMargin
+                  || robotPose.getY() < -fieldBorderMargin
+                  || robotPose.getY() > aprilTagLayout.getFieldWidth() + fieldBorderMargin;
 
-        // Add pose to log
-        robotPoses.add(robotPose);
-        if (rejectPose) {
-          robotPosesRejected.add(robotPose);
-        } else {
-          robotPosesAccepted.add(robotPose);
+          // Add pose to log
+          robotPoses.add(robotPose);
+          if (rejectPose) {
+            robotPosesRejected.add(robotPose);
+          } else {
+            robotPosesAccepted.add(robotPose);
+          }
+
+          // Skip if rejected
+          if (rejectPose) {
+            continue;
+          }
+
+          // Calculate standard deviations
+          double stdDevFactor =
+              Math.pow(poseObservation.averageTagDistance(), 2.0) / poseObservation.tagCount();
+          double linearStdDev = linearStdDevBaseline * stdDevFactor;
+          double angularStdDev = angularStdDevBaseline * stdDevFactor;
+
+          // Send vision observation
+          globalConsumer.accept(
+              robotPose.toPose2d(),
+              Utils.fpgaToCurrentTime(poseObservation.timestamp()),
+              VecBuilder.fill(linearStdDev, linearStdDev, angularStdDev));
+        } else { // Single tag
+          // Get the best and the alternate pose
+          Pose3d robotPose1 =
+              poseObservation.bestCameraPose().plus(cameraTransforms[cameraIndex].inverse());
+          Pose3d robotPose2 =
+              poseObservation.alternateCameraPose().plus(cameraTransforms[cameraIndex].inverse());
+
+          // Check ambiguity to see if we can immediately reject the pose
+          boolean rejectPose = poseObservation.ambiguity() > maxAmbiguity;
+
+          if (!rejectPose) {
+            Pose3d robotPose;
+            // Get the current rotation of the robot
+            Rotation2d currentRotation = rotationSupplier.getRotation(Timer.getTimestamp());
+            if (Math.abs(
+                    currentRotation.minus(robotPose1.getRotation().toRotation2d()).getRadians())
+                < Math.abs(
+                    currentRotation.minus(robotPose2.getRotation().toRotation2d()).getRadians())) {
+              robotPose = robotPose1;
+            } else {
+              robotPose = robotPose2;
+            }
+
+            // Check whether to reject pose
+            rejectPose =
+                Math.abs(robotPose.getZ()) > maxZError // Must have realistic Z coordinate
+                    // Must be within the field boundaries
+                    || robotPose.getX() < -fieldBorderMargin
+                    || robotPose.getX() > aprilTagLayout.getFieldLength() + fieldBorderMargin
+                    || robotPose.getY() < -fieldBorderMargin
+                    || robotPose.getY() > aprilTagLayout.getFieldWidth() + fieldBorderMargin;
+
+            // Add pose to log
+            robotPoses.add(robotPose);
+            if (rejectPose) {
+              robotPosesRejected.add(robotPose);
+            } else {
+              robotPosesAccepted.add(robotPose);
+            }
+
+            // Skip if rejected
+            if (rejectPose) {
+              continue;
+            }
+
+            // Calculate standard deviations
+            double linearStdDev =
+                linearStdDevSingleTagBaseline * Math.pow(poseObservation.averageTagDistance(), 2.0);
+            double angularStdDev = Double.POSITIVE_INFINITY;
+
+            // Send vision observation
+            globalConsumer.accept(
+                robotPose.toPose2d(),
+                Utils.fpgaToCurrentTime(poseObservation.timestamp()),
+                VecBuilder.fill(linearStdDev, linearStdDev, angularStdDev));
+          } else {
+            robotPoses.add(robotPose1);
+            robotPosesRejected.add(robotPose1);
+          }
         }
-
-        // Skip if rejected
-        if (rejectPose) {
-          continue;
-        }
-
-        // Calculate standard deviations
-        double stdDevFactor =
-            Math.pow(poseObservation.averageTagDistance(), 2.0) / poseObservation.tagCount();
-        double linearStdDev = linearStdDevBaseline * stdDevFactor;
-        double angularStdDev = angularStdDevBaseline * stdDevFactor;
-        if (cameraIndex < cameraStdDevFactors.length) {
-          linearStdDev *= cameraStdDevFactors[cameraIndex];
-          angularStdDev *= cameraStdDevFactors[cameraIndex];
-        }
-
-        // Send vision observation
-        consumer.accept(
-            robotPose.toPose2d(),
-            Utils.fpgaToCurrentTime(poseObservation.timestamp()),
-            VecBuilder.fill(linearStdDev, linearStdDev, angularStdDev));
       }
 
       // Loop over single tag observations
       for (var observation : inputs[cameraIndex].singleTagObservations) {
+        // Convert timestamp from FPGA to current time for the Phoenix swerve library
+        double timestamp = Utils.fpgaToCurrentTime(observation.timestamp());
         // Get the robot to camera transform/offset
-        Transform3d robotToCamera = robotToCameraTransforms[cameraIndex];
+        Transform3d robotToCamera = cameraTransforms[cameraIndex];
 
         // Get the 2D distance from the camera to the tag
         double distance2d =
@@ -172,15 +238,13 @@ public class ATVision extends SubsystemBase {
 
         // Get the rotation of the tag from the camera position
         Rotation2d camToTagRotation =
-            robotRotationSupplier
-                .get()
+            rotationSupplier
+                .getRotation(timestamp)
                 .plus(
                     robotToCamera
                         .getRotation()
                         .toRotation2d()
                         .plus(Rotation2d.fromRadians(observation.tx())));
-        Logger.recordOutput(
-            "Vision/Testing", robotToCamera.getRotation().toRotation2d().getRadians());
 
         // Get the 2D tag pose from the AprilTag layout
         var tagPose =
@@ -196,33 +260,31 @@ public class ATVision extends SubsystemBase {
                 .getTranslation();
 
         // Get the robot pose with the translation
-        var cameraInverse = robotToCamera.inverse();
         var robotPose =
             new Pose2d(
                     fieldToCameraTranslation,
-                    robotRotationSupplier.get().plus(robotToCamera.getRotation().toRotation2d()))
+                    rotationSupplier
+                        .getRotation(timestamp)
+                        .plus(robotToCamera.getRotation().toRotation2d()))
                 .transformBy(
                     new Transform2d(
                         new Pose2d(
                             robotToCamera.getTranslation().toTranslation2d(),
                             robotToCamera.getRotation().toRotation2d()),
                         Pose2d.kZero));
-        robotPoses.add(new Pose3d(robotPose));
+
+        var robotPose3d = new Pose3d(robotPose);
+        robotPoses.add(robotPose3d);
+        robotPosesAccepted.add(robotPose3d);
 
         // Calculate standard deviations
         double stdDevFactor = Math.pow(observation.distance(), 2.0);
         double linearStdDev = linearStdDevBaseline * stdDevFactor;
-        double angularStdDev = angularStdDevBaseline * stdDevFactor;
-        if (cameraIndex < cameraStdDevFactors.length) {
-          linearStdDev *= cameraStdDevFactors[cameraIndex];
-          angularStdDev *= cameraStdDevFactors[cameraIndex];
-        }
+        double angularStdDev = Double.POSITIVE_INFINITY;
 
         // Send vision observation
-        consumer.accept(
-            robotPose,
-            Utils.fpgaToCurrentTime(observation.timestamp()),
-            VecBuilder.fill(linearStdDev, linearStdDev, angularStdDev));
+        globalConsumer.accept(
+            robotPose, timestamp, VecBuilder.fill(linearStdDev, linearStdDev, angularStdDev));
       }
 
       // Log camera pose data
@@ -263,9 +325,8 @@ public class ATVision extends SubsystemBase {
 
   @FunctionalInterface
   public interface ATVisionRotationSupplier {
-    Rotation2d getRotation(
-        double timestampSeconds);
+    Rotation2d getRotation(double timestampSeconds);
   }
 
-  public record CameraConfig(ATVisionIO io, Transform3d robotToCamera) {};
+  public record CameraConfig(ATVisionIO io, Transform3d robotToCamera) {}
 }
