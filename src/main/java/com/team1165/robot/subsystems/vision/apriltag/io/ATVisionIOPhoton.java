@@ -7,13 +7,16 @@
 
 package com.team1165.robot.subsystems.vision.apriltag.io;
 
+import com.team1165.robot.subsystems.vision.apriltag.constants.ATVisionConstants;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.numbers.N3;
 import java.util.ArrayDeque;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import org.photonvision.PhotonCamera;
@@ -29,6 +32,7 @@ public class ATVisionIOPhoton implements ATVisionIO {
   // Camera and camera intrinsics objects
   protected final PhotonCamera camera;
   private Matrix<N3, N3> camIntrinsics;
+  private boolean trigEnabled = false;
 
   /**
    * Creates a new {@link ATVisionIOPhoton} with the provided name.
@@ -81,6 +85,7 @@ public class ATVisionIOPhoton implements ATVisionIO {
                 new Pose3d(
                     multitagResult.estimatedPose.best.getTranslation(),
                     multitagResult.estimatedPose.best.getRotation()), // 3D pose estimate
+                null, // MultiTag, no alternative pose
                 totalTagDistance / result.targets.size(), // Average tag distance
                 multitagResult.estimatedPose.ambiguity, // Ambiguity
                 multitagResult.fiducialIDsUsed.size(), // Tag count
@@ -89,44 +94,74 @@ public class ATVisionIOPhoton implements ATVisionIO {
         // Do a single tag calculation instead, get the tag/target
         PhotonTrackedTarget tag = result.targets.get(0);
 
-        // Find the center of the tag and calculate corrected value based on camera intrinsics
-        List<TargetCorner> tagCorners = tag.detectedCorners;
-        double sumX = 0.0;
-        double sumY = 0.0;
-        for (TargetCorner corner : tagCorners) {
-          sumX += corner.x;
-          sumY += corner.y;
-        }
+        if (trigEnabled) { // If we are using trig, calculate tx, ty, etc.
+          // Find the center of the tag and calculate corrected value based on camera intrinsics
+          List<TargetCorner> tagCorners = tag.detectedCorners;
+          double sumX = 0.0;
+          double sumY = 0.0;
+          for (TargetCorner corner : tagCorners) {
+            sumX += corner.x;
+            sumY += corner.y;
+          }
 
-        // If camera intrinsics do exist, continue
-        if (camIntrinsics != null) {
-          double fx = camIntrinsics.get(0, 0);
-          double cx = camIntrinsics.get(0, 2);
-          double yawOffset = cx - sumX / 4;
+          // If camera intrinsics do exist, continue
+          if (camIntrinsics != null) {
+            double fx = camIntrinsics.get(0, 0);
+            double cx = camIntrinsics.get(0, 2);
+            double yawOffset = cx - sumX / 4;
 
-          double fy = camIntrinsics.get(1, 1);
-          double cy = camIntrinsics.get(1, 2);
-          double pitchOffset = cy - sumY / 4;
+            double fy = camIntrinsics.get(1, 1);
+            double cy = camIntrinsics.get(1, 2);
+            double pitchOffset = cy - sumY / 4;
 
-          // Calculate the yaw (horizontal angle, x value)
-          var yaw = new Rotation2d(fx, yawOffset);
-          // Calculate the pitch (vertical angle, y value) with the new yaw value
-          var pitch = new Rotation2d(fy / Math.cos(Math.atan(yawOffset / fx)), -pitchOffset);
+            // Calculate the yaw (horizontal angle, x value)
+            var yaw = new Rotation2d(fx, yawOffset);
+            // Calculate the pitch (vertical angle, y value) with the new yaw value
+            var pitch = new Rotation2d(fy / Math.cos(Math.atan(yawOffset / fx)), -pitchOffset);
 
-          // Add tag ID
-          tagIds.add((short) tag.fiducialId);
+            // Add tag ID
+            tagIds.add((short) tag.fiducialId);
 
-          // Add single tag observation
-          singleTagObservations.add(
-              new SingleTagObservation(
-                  yaw.getRadians(), // Yaw (horizontal angle, x value)
-                  pitch.getRadians(), // Pitch (vertical angle, y value)
-                  tag.fiducialId, // Tag ID
-                  tag.bestCameraToTarget.getTranslation().getNorm(), // Tag distance
-                  result.getTimestampSeconds())); // Timestamp
+            // Add single tag observation
+            singleTagObservations.add(
+                new SingleTagObservation(
+                    yaw.getRadians(), // Yaw (horizontal angle, x value)
+                    pitch.getRadians(), // Pitch (vertical angle, y value)
+                    tag.fiducialId, // Tag ID
+                    tag.bestCameraToTarget.getTranslation().getNorm(), // Tag distance
+                    result.getTimestampSeconds())); // Timestamp
+          } else {
+            // Update camera matrix if it doesn't exist
+            camIntrinsics = camera.getCameraMatrix().orElse(null);
+          }
         } else {
-          // Update camera matrix if it doesn't exist
-          camIntrinsics = camera.getCameraMatrix().orElse(null);
+          Optional<Pose3d> tagPose = ATVisionConstants.aprilTagLayout.getTagPose(tag.fiducialId);
+
+          // Check if the tag exists in the field layout, and if so, continue with calculation
+          if (tagPose.isPresent()) {
+            // Calculate camera pose based on the tag pose
+            Transform3d bestCameraToTarget = tag.bestCameraToTarget;
+            Pose3d bestCameraPose =
+                tagPose.get().plus(bestCameraToTarget.inverse());
+
+            // Get alternative camera pose
+            Transform3d alternateCameraToTarget = tag.altCameraToTarget;
+            Pose3d alternateCameraPose =
+                tagPose.get().plus(alternateCameraToTarget.inverse());
+
+            // Add tag ID
+            tagIds.add((short) tag.fiducialId);
+
+            // Add pose observation
+            poseObservations.add(
+                new CameraPoseObservation(
+                    bestCameraPose, // Best pose estimate
+                    alternateCameraPose, // Alternate pose estimate
+                    bestCameraToTarget.getTranslation().getNorm(), // Tag distance
+                    tag.poseAmbiguity, // Ambiguity
+                    1, // Tag count (one because single tag)
+                    result.getTimestampSeconds())); // Timestamp
+          }
         }
       }
     }
@@ -143,5 +178,15 @@ public class ATVisionIOPhoton implements ATVisionIO {
     for (int id : tagIds) {
       inputs.tagIds[i++] = id;
     }
+  }
+
+  /**
+   * Method to enable or disable single-tag pose estimation through Tx/Ty measurements. By disabling
+   * this, the standard 3D solver method will be used for single-tag estimation.
+   *
+   * @param enable Boolean that represents whether to enable or disable Tx/Ty estimation.
+   */
+  public void setSingleTagTrig(boolean enable) {
+    trigEnabled = enable;
   }
 }

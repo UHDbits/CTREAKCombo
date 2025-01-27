@@ -75,7 +75,7 @@ public class ATVision extends SubsystemBase {
 
   @Override
   public void periodic() {
-    // Update current inputs and log
+    // Update current inputs and log inputs
     for (int i = 0; i < io.length; i++) {
       io[i].updateInputs(inputs[i]);
       Logger.processInputs("AprilTagVision/Camera" + i, inputs[i]);

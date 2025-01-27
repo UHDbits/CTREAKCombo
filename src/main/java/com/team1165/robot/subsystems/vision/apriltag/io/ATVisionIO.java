@@ -23,6 +23,14 @@ public interface ATVisionIO {
    */
   default void updateInputs(ATVisionIOInputs inputs) {}
 
+  /**
+   * Method to enable or disable single-tag pose estimation through Tx/Ty measurements. By disabling
+   * this, the standard 3D solver method will be used for single-tag estimation.
+   *
+   * @param enable Boolean that represents whether to enable or disable Tx/Ty estimation.
+   */
+  default void setSingleTagTrig(boolean enable) {}
+
   /** Class used to store the IO values of an AprilTag vision camera. */
   @AutoLog
   class ATVisionIOInputs {
@@ -35,7 +43,7 @@ public interface ATVisionIO {
     /** Camera pose observations gathered since the last time the input was updated. */
     public CameraPoseObservation[] poseObservations = new CameraPoseObservation[0];
 
-    /** Single tag observations gathered since the last time the input was updated. */
+    /** Tx/Ty Single tag observations gathered since the last time the input was updated. */
     public SingleTagObservation[] singleTagObservations = new SingleTagObservation[0];
 
     /**
@@ -48,15 +56,17 @@ public interface ATVisionIO {
   /**
    * Represents the pose observation from a AprilTag camera processed on the coprocessor.
    *
-   * @param cameraPose The pose observation itself. Note, this is the pose of the camera, not the
-   *     robot.
+   * @param bestCameraPose The best camera result, or the pose observation itself. Note, this is the
+   *     pose of the camera, not the robot.
+   * @param alternateCameraPose The alternative camera result, if one exists.
    * @param averageTagDistance The average distance of the AprilTags observed from the camera.
    * @param ambiguity The measure of how "ambiguous" (unsure/unclear) the pose observation is.
    * @param tagCount The number of AprilTags used to make this pose observation.
    * @param timestamp The synced timestamp of the pose observation.
    */
   record CameraPoseObservation(
-      Pose3d cameraPose,
+      Pose3d bestCameraPose,
+      Pose3d alternateCameraPose,
       double averageTagDistance,
       double ambiguity,
       int tagCount,
